@@ -23,40 +23,40 @@ This project is a web application for processing and verifying student math assi
 
 1. **Clone the repository:**
 
-   \`\`\`sh
-   git clone https://github.com/yourusername/math-assignment-checker.git
+   ```
+   shgit clone https://github.com/yourusername/math-assignment-checker.git
    cd math-assignment-checker
-   \`\`\`
+   ```
 
 2. **Install dependencies:**
 
-   \`\`\`sh
-   npm install
-   \`\`\`
+   ```
+   sh npm install
+   ```
 
 3. **Set up environment variables:**
 
-   Create a \`.env.local\` file in the root directory and add your OpenAI and Supabase keys:
+   Create a `.env.local` file in the root directory and add your OpenAI and Supabase keys:
 
-   \`\`\`env
+   ```
    OPENAI_API_KEY=your_openai_api_key
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_KEY=your_supabase_key
-   \`\`\`
+   ```
 
 4. **Start the development server:**
 
-   \`\`\`sh
-   npm run dev
-   \`\`\`
+   ```
+   sh npm run dev
+   ```
 
-   The application will be available at \`http://localhost:3000\`.
+   The application will be available at `http://localhost:3000`.
 
 ## Usage
 
 1. **Open the application:**
 
-   Navigate to \`http://localhost:3000\` in your web browser.
+   Navigate to `http://localhost:3000` in your web browser.
 
 2. **Enter details:**
 
@@ -78,9 +78,9 @@ This project is a web application for processing and verifying student math assi
 
 ### Environment Variables
 
-- \`OPENAI_API_KEY\`: Your OpenAI API key.
-- \`NEXT_PUBLIC_SUPABASE_URL\`: Your Supabase project URL.
-- \`NEXT_PUBLIC_SUPABASE_KEY\`: Your Supabase project key.
+- `OPENAI_API_KEY`: Your OpenAI API key.
+- `NEXT_PUBLIC_SUPABASE_URL`: Your Supabase project URL.
+- `NEXT_PUBLIC_SUPABASE_KEY`: Your Supabase project key.
 
 ## Project Structure
 
