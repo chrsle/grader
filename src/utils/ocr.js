@@ -1,4 +1,3 @@
-// src/utils/ocr.js
 import Tesseract from 'tesseract.js';
 
 export const extractTextFromImage = async (imageSrc) => {

@@ -1,86 +1,112 @@
-'use client'; // Add this directive at the top
+'use client';
 
 import React, { useState } from 'react';
-import WebcamCapture from '../components/WebcamCapture';
 import { extractTextFromImage } from '../utils/ocr';
 import { verifyAnswers } from '../utils/openai';
 import { saveResult } from '../utils/supabase';
+import styles from './page.module.css';
 
 export default function Home() {
   const [result, setResult] = useState(null);
   const [testVersion, setTestVersion] = useState('');
   const [testName, setTestName] = useState('');
   const [studentName, setStudentName] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploadedImage, setUploadedImage] = useState(null);
 
-  const handleCapture = async (imageSrc) => {
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setUploadedImage(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleProcessImage = async () => {
+    if (!uploadedImage) {
+      setStatus('Please upload an image first');
+      return;
+    }
+
     try {
-      if (!imageSrc) {
-        throw new Error("No image source captured");
-      }
-
       setLoading(true);
-      const extractedText = await extractTextFromImage(imageSrc);
+      setStatus('Processing image...');
+      const extractedText = await extractTextFromImage(uploadedImage);
       const verificationResult = await verifyAnswers(extractedText);
-      const savedResult = await saveResult(testVersion, testName, studentName, imageSrc, extractedText, verificationResult);
+      const savedResult = await saveResult(testVersion, testName, studentName, uploadedImage, extractedText, verificationResult);
       setResult(savedResult);
       setStatus('Image processed successfully');
     } catch (error) {
-      console.error('Error processing image:', error);
-      setStatus('Error processing image');
+      console.error('Error processing image:', error.message);
+      setStatus(`Error processing image: ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const startScanning = () => {
-    setIsScanning(true);
-    setStatus('');
-    setResult(null);
-  };
-
-  const resetForm = () => {
-    setTestVersion('');
-    setTestName('');
-    setStudentName('');
-    setIsScanning(false);
-    setStatus('');
-    setResult(null);
-  };
-
   return (
     <div>
       <h1>Real-time Math Assignment Checker</h1>
-      {!isScanning ? (
-        <div>
-          <label>
-            Test Version:
-            <input type="text" value={testVersion} onChange={(e) => setTestVersion(e.target.value)} />
-          </label>
-          <label>
-            Test Name:
-            <input type="text" value={testName} onChange={(e) => setTestName(e.target.value)} />
-          </label>
-          <label>
-            Student Name:
-            <input type="text" value={studentName} onChange={(e) => setStudentName(e.target.value)} />
-          </label>
-          <button onClick={startScanning}>Start Scanning</button>
+      <div>
+        <div className={styles.formGroup}>
+          <label htmlFor="testVersion" className={styles.label}>Test Version:</label>
+          <input
+            id="testVersion"
+            className={styles.input}
+            type="text"
+            value={testVersion}
+            onChange={(e) => setTestVersion(e.target.value)}
+          />
         </div>
-      ) : (
+        <div className={styles.formGroup}>
+          <label htmlFor="testName" className={styles.label}>Test Name:</label>
+          <input
+            id="testName"
+            className={styles.input}
+            type="text"
+            value={testName}
+            onChange={(e) => setTestName(e.target.value)}
+          />
+        </div>
+        <div className={styles.formGroup}>
+          <label htmlFor="studentName" className={styles.label}>Student Name:</label>
+          <input
+            id="studentName"
+            className={styles.input}
+            type="text"
+            value={studentName}
+            onChange={(e) => setStudentName(e.target.value)}
+          />
+        </div>
+        <div className={styles.formGroup}>
+          <label htmlFor="imageUpload" className={styles.label}>Upload Image:</label>
+          <input
+            id="imageUpload"
+            className={styles.input}
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+          />
+        </div>
+        <button className={styles.button} onClick={handleProcessImage}>Process Image</button>
+      </div>
+      {status && <p>{status}</p>}
+      {loading && <p>Loading...</p>}
+      {uploadedImage && (
+        <div style={{ marginTop: '20px' }}>
+          <img
+            src={uploadedImage}
+            alt="Uploaded"
+            style={{ width: '100%' }}
+          />
+        </div>
+      )}
+      {result && (
         <div>
-          <WebcamCapture onCapture={handleCapture} setStatus={setStatus} />
-          {status && <p>{status}</p>}
-          {loading && <p>Loading...</p>}
-          {result && (
-            <div>
-              <h2>Result:</h2>
-              <pre>{JSON.stringify(result, null, 2)}</pre>
-              <button onClick={resetForm}>Next User</button>
-            </div>
-          )}
+          <h2>Result:</h2>
+          <pre>{JSON.stringify(result, null, 2)}</pre>
         </div>
       )}
     </div>
