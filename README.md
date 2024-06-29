@@ -84,7 +84,6 @@ This project is a web application for processing and verifying student math assi
 
 ## Project Structure
 
-\`\`\`
 my-next-app/
 ├── .env.local
 ├── README.md
@@ -105,7 +104,6 @@ my-next-app/
 │       ├── openai.js
 │       └── supabase.js
 └── yarn.lock
-\`\`\`
 
 ## Contributing
 

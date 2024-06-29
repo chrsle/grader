@@ -7,17 +7,21 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 export async function POST(req) {
-  const { extractedText } = await req.json();
-
-  const prompt = `The following is a student's math assignment. Please determine if the answers are correct and provide explanations.
-
-  Assignment:
-  ${extractedText}
-
-  Response:
-  `;
-
   try {
+    const { extractedText } = await req.json();
+
+    if (!extractedText) {
+      throw new Error('No extracted text provided');
+    }
+
+    const prompt = `The following is a student's math assignment. Please determine if the answers are correct and provide explanations.
+
+    Assignment:
+    ${extractedText}
+
+    Response:
+    `;
+
     const response = await openai.createCompletion({
       model: 'text-davinci-003',
       prompt: prompt,
@@ -31,6 +35,7 @@ export async function POST(req) {
       },
     });
   } catch (error) {
+    console.error('Error in /api/verify:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: {
