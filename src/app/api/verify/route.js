@@ -1,14 +1,14 @@
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 
-const configuration = new Configuration({
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
-
-const openai = new OpenAIApi(configuration);
 
 export async function POST(req) {
   try {
     const { extractedText } = await req.json();
+    
+    console.log('Received extractedText:', extractedText);
 
     if (!extractedText) {
       throw new Error('No extracted text provided');
@@ -22,13 +22,13 @@ export async function POST(req) {
     Response:
     `;
 
-    const response = await openai.createCompletion({
-      model: 'text-davinci-003',
-      prompt: prompt,
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [{ role: 'user', content: prompt }],
       max_tokens: 500,
     });
 
-    return new Response(JSON.stringify({ result: response.data.choices[0].text.trim() }), {
+    return new Response(JSON.stringify({ result: response.choices[0].message.content.trim() }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',

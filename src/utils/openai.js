@@ -12,6 +12,7 @@ export const verifyAnswers = async (extractedText) => {
       if (response.ok) {
         return data.result;
       } else {
+        console.error('Error from server:', data);
         throw new Error(data.error || 'Failed to verify answers');
       }
     } catch (error) {
