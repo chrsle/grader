@@ -23,10 +23,8 @@ This project is a web application for processing and verifying student math assi
 
 1. **Clone the repository:**
 
-   ```
-   shgit clone https://github.com/yourusername/math-assignment-checker.git
-   cd math-assignment-checker
-   ```
+   ```shgit clone https://github.com/yourusername/math-assignment-checker.git
+   cd math-assignment-checker```
 
 2. **Install dependencies:**
 
