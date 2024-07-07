@@ -117,11 +117,11 @@ export default function Home() {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        const { result } = await response.json();
-        const verificationResult = JSON.parse(result);
+        const data = await response.json();
+        const verificationResult = data.result;
 
         const imagePath = await uploadImage(studentImages[i], `student_${i+1}_${Date.now()}.png`);
-        const savedResult = await saveResult(testType, studentName, imagePath, JSON.stringify(parsedStudentAnswers), JSON.stringify(verificationResult));
+        const savedResult = await saveResult(testType, studentName, imagePath, JSON.stringify(parsedStudentAnswers), verificationResult);
 
         results.push({
           studentNumber: i + 1,
