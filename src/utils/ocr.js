@@ -34,16 +34,50 @@ export const extractTextFromImage = async (imageFile, progressCallback) => {
     const text = result.data.text;
     console.log('Extracted text:', text);
 
-    // Split the extracted text into questions
-    const questions = text.split(/\d+\)/).filter(q => q.trim() !== '');
-
-    return questions.map((q, index) => ({
-      questionNumber: index + 1,
-      questionText: q.trim()
-    }));
+    return text;
   } catch (error) {
     console.error('Error in extractTextFromImage:', error);
     console.error('Error stack:', error.stack);
     throw error;
   }
+};
+
+export const parseQuestions = (text) => {
+  const questions = [];
+  const lines = text.split('\n');
+  let currentQuestion = null;
+
+  const questionRegex = /^(\d+[\.\)])\s*(.*)/;
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    const match = trimmedLine.match(questionRegex);
+
+    if (match) {
+      // This line starts a new question
+      if (currentQuestion) {
+        questions.push(currentQuestion);
+      }
+      currentQuestion = {
+        number: match[1].replace(/[\.\)]$/, ''),  // Remove the period or parenthesis
+        text: match[2],
+        answer: ''
+      };
+    } else if (currentQuestion) {
+      // This line is part of the current question
+      if (trimmedLine.toLowerCase().startsWith('answer:')) {
+        currentQuestion.answer = trimmedLine.replace(/^answer:/i, '').trim();
+      } else {
+        // If it's not an answer line, add it to the question text
+        currentQuestion.text += ' ' + trimmedLine;
+      }
+    }
+  }
+
+  // Add the last question if there is one
+  if (currentQuestion) {
+    questions.push(currentQuestion);
+  }
+
+  return questions;
 };

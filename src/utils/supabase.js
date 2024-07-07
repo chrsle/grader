@@ -26,14 +26,15 @@ export const uploadImage = async (file, fileName) => {
 
     if (error) throw error;
 
+    console.log('Image uploaded successfully:', data);
     return data.path;
   } catch (error) {
     console.error('Error in uploadImage:', error);
-    return null;
+    throw error;
   }
 };
 
-export const saveResult = async (testVersion, testName, studentName, imagePath, extractedText, verificationResult, questionNumber) => {
+export const saveResult = async (testType, studentName, imagePath, extractedText, verificationResult) => {
   console.log('Starting saveResult function');
   try {
     console.log('Inserting data into student_answers table');
@@ -41,13 +42,11 @@ export const saveResult = async (testVersion, testName, studentName, imagePath, 
       .from('student_answers')
       .insert([
         { 
-          test_version: testVersion,
-          test_name: testName,
+          test_type: testType,
           student_name: studentName,
           image_data: imagePath,
           extracted_text: extractedText,
-          verification_result: verificationResult,
-          question_number: questionNumber
+          verification_result: verificationResult
         }
       ])
       .select();
@@ -58,6 +57,59 @@ export const saveResult = async (testVersion, testName, studentName, imagePath, 
     return data;
   } catch (error) {
     console.error('Error in saveResult:', error);
-    return null;
+    throw error;
+  }
+};
+
+export const saveKeyText = async (extractedText) => {
+  try {
+    const { data, error } = await supabase
+      .from('keys')
+      .insert([{ extracted_text: extractedText }])
+      .select();
+
+    if (error) throw error;
+
+    console.log('Key text saved successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Error saving key text:', error);
+    throw error;
+  }
+};
+
+// Function to retrieve saved keys
+export const getKeys = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('keys')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    console.log('Retrieved keys:', data);
+    return data;
+  } catch (error) {
+    console.error('Error retrieving keys:', error);
+    throw error;
+  }
+};
+
+// Function to delete a key
+export const deleteKey = async (keyId) => {
+  try {
+    const { data, error } = await supabase
+      .from('keys')
+      .delete()
+      .match({ id: keyId });
+
+    if (error) throw error;
+
+    console.log('Key deleted successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Error deleting key:', error);
+    throw error;
   }
 };
