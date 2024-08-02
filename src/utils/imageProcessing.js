@@ -1,17 +1,18 @@
-import { Worker } from 'worker_threads';
+import { extractTextFromImage } from './ocr';
 
-export const processImagesInParallel = async (images, processFunction) => {
-  const numWorkers = Math.min(images.length, navigator.hardwareConcurrency || 4);
-  const chunkSize = Math.ceil(images.length / numWorkers);
-  
-  const workers = [];
-  for (let i = 0; i < numWorkers; i++) {
-    const start = i * chunkSize;
-    const end = Math.min(start + chunkSize, images.length);
-    const worker = new Worker('./imageProcessingWorker.js');
-    workers.push(worker.run({ images: images.slice(start, end), processFunction }));
+export const processImagesInParallel = async (images, progressCallback) => {
+  const results = [];
+  const totalImages = images.length;
+
+  for (let i = 0; i < totalImages; i++) {
+    const result = await extractTextFromImage(images[i], (progress) => {
+      const overallProgress = (i + progress) / totalImages;
+      if (typeof progressCallback === 'function') {
+        progressCallback(overallProgress);
+      }
+    });
+    results.push(result);
   }
 
-  const results = await Promise.all(workers);
-  return results.flat();
+  return results;
 };

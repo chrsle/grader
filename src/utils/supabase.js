@@ -3,7 +3,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-console.log('Supabase Service Key:', supabaseServiceKey);
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('Supabase URL or Service Key is missing');
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -13,19 +15,15 @@ export const uploadImage = async (file, fileName) => {
       .from('student_tests')
       .upload(fileName, file);
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
-    const { publicURL, error: publicURLError } = supabase.storage
+    const { data: publicURLData, error: publicURLError } = supabase.storage
       .from('student_tests')
       .getPublicUrl(fileName);
 
-    if (publicURLError) {
-      throw publicURLError;
-    }
+    if (publicURLError) throw publicURLError;
 
-    return publicURL;
+    return publicURLData.publicUrl;
   } catch (error) {
     console.error('Error in uploadImage:', error);
     throw error;
@@ -44,10 +42,7 @@ export const saveResult = async (testType, studentName, imagePath, studentAnswer
         verification_result: verificationResult,
       });
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return data;
   } catch (error) {
     console.error('Error in saveResult:', error);
@@ -61,10 +56,7 @@ export const saveKeyText = async (keyText) => {
       .from('answer_keys')
       .insert({ extracted_text: keyText });
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return data;
   } catch (error) {
     console.error('Error in saveKeyText:', error);
@@ -78,10 +70,7 @@ export const getKeys = async () => {
       .from('answer_keys')
       .select('*');
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return data;
   } catch (error) {
     console.error('Error in getKeys:', error);
@@ -96,13 +85,52 @@ export const deleteKey = async (keyId) => {
       .delete()
       .eq('id', keyId);
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return data;
   } catch (error) {
     console.error('Error in deleteKey:', error);
     throw error;
+  }
+};
+
+export const saveGradingCriteria = async (testType, criteria) => {
+  try {
+    const { data, error } = await supabase
+      .from('grading_criteria')
+      .upsert({ test_type: testType, criteria }, { onConflict: 'test_type' });
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error in saveGradingCriteria:', error);
+    throw error;
+  }
+};
+
+export const getGradingCriteria = async (testType) => {
+  console.log('getGradingCriteria called with testType:', testType);
+  try {
+    const { data, error } = await supabase
+      .from('grading_criteria')
+      .select('criteria')
+      .eq('test_type', testType)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Supabase error in getGradingCriteria:', error);
+      throw error;
+    }
+
+    console.log('Raw data from Supabase:', data);
+
+    if (!data || !data.criteria) {
+      console.log('No criteria found for testType:', testType);
+      return null;
+    }
+
+    return data.criteria;
+  } catch (error) {
+    console.error('Error in getGradingCriteria:', error);
+    return null;
   }
 };

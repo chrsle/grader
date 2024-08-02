@@ -24,7 +24,7 @@ export const extractTextFromImage = async (imageFile, progressCallback) => {
     const result = await Tesseract.recognize(base64Image, 'eng', {
       logger: m => {
         console.log(m);
-        if (m.status === 'recognizing text') {
+        if (m.status === 'recognizing text' && typeof progressCallback === 'function') {
           progressCallback(m.progress);
         }
       }
