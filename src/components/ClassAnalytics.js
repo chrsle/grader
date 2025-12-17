@@ -345,18 +345,18 @@ const ClassAnalytics = ({ results }) => {
 // Helper component for stat boxes
 const StatBox = ({ label, value, subtitle, color }) => {
   const colorClasses = {
-    green: 'bg-green-50 border-green-200',
-    yellow: 'bg-yellow-50 border-yellow-200',
-    red: 'bg-red-50 border-red-200',
-    blue: 'bg-blue-50 border-blue-200',
-    default: 'bg-gray-50 border-gray-200'
+    green: 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800',
+    yellow: 'bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:border-yellow-800',
+    red: 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800',
+    blue: 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800',
+    default: 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700'
   };
 
   return (
-    <div className={`rounded-lg border p-4 ${colorClasses[color] || colorClasses.default}`}>
-      <p className="text-sm text-gray-600">{label}</p>
-      <p className="text-2xl font-bold">{value}</p>
-      {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
+    <div className={`rounded-lg border p-3 md:p-4 ${colorClasses[color] || colorClasses.default}`}>
+      <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400">{label}</p>
+      <p className="text-xl md:text-2xl font-bold dark:text-white">{value}</p>
+      {subtitle && <p className="text-xs text-gray-500 dark:text-gray-500">{subtitle}</p>}
     </div>
   );
 };

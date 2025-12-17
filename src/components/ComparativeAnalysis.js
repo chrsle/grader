@@ -179,24 +179,24 @@ const ComparativeAnalysis = ({ currentResults, previousResults = [], className =
               </div>
 
               {/* Summary */}
-              <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-                <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <div className="text-xl font-bold text-green-600">
+              <div className="mt-4 grid grid-cols-3 gap-2 md:gap-4 text-center">
+                <div className="p-2 md:p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <div className="text-lg md:text-xl font-bold text-green-600">
                     {studentImprovements.filter(s => s.change > 5).length}
                   </div>
-                  <div className="text-sm text-green-700">Improved</div>
+                  <div className="text-xs md:text-sm text-green-700">Improved</div>
                 </div>
-                <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                  <div className="text-xl font-bold text-gray-600">
+                <div className="p-2 md:p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                  <div className="text-lg md:text-xl font-bold text-gray-600">
                     {studentImprovements.filter(s => Math.abs(s.change) <= 5).length}
                   </div>
-                  <div className="text-sm text-gray-600">Stable</div>
+                  <div className="text-xs md:text-sm text-gray-600">Stable</div>
                 </div>
-                <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                  <div className="text-xl font-bold text-red-600">
+                <div className="p-2 md:p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                  <div className="text-lg md:text-xl font-bold text-red-600">
                     {studentImprovements.filter(s => s.change < -5).length}
                   </div>
-                  <div className="text-sm text-red-700">Declined</div>
+                  <div className="text-xs md:text-sm text-red-700">Declined</div>
                 </div>
               </div>
             </div>

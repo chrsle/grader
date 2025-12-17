@@ -162,11 +162,11 @@ const PracticeGenerator = ({ weakTopics = [], results = [] }) => {
       <CardContent>
         <div className="space-y-4">
           {/* Topic Selection */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             <div>
-              <label className="text-sm font-medium">Topic</label>
+              <label className="text-sm font-medium block mb-1">Topic</label>
               <select
-                className="w-full h-10 px-3 border rounded-md"
+                className="w-full h-12 md:h-10 px-3 border rounded-md text-base"
                 value={selectedTopic}
                 onChange={(e) => setSelectedTopic(e.target.value)}
               >
@@ -182,9 +182,9 @@ const PracticeGenerator = ({ weakTopics = [], results = [] }) => {
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium">Difficulty</label>
+              <label className="text-sm font-medium block mb-1">Difficulty</label>
               <select
-                className="w-full h-10 px-3 border rounded-md"
+                className="w-full h-12 md:h-10 px-3 border rounded-md text-base"
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value)}
               >
@@ -194,9 +194,9 @@ const PracticeGenerator = ({ weakTopics = [], results = [] }) => {
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium">Number of Problems</label>
+              <label className="text-sm font-medium block mb-1">Number of Problems</label>
               <select
-                className="w-full h-10 px-3 border rounded-md"
+                className="w-full h-12 md:h-10 px-3 border rounded-md text-base"
                 value={count}
                 onChange={(e) => setCount(parseInt(e.target.value))}
               >

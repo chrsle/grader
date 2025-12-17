@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { parseQuestions } from '../utils/ocr';
@@ -23,7 +23,23 @@ import PracticeGenerator from '../components/PracticeGenerator';
 import ComparativeAnalysis from '../components/ComparativeAnalysis';
 import { ThemeProvider, ThemeToggle } from '../components/ThemeProvider';
 
+// Mobile detection hook
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return isMobile;
+};
+
 export default function Home() {
+  const isMobile = useIsMobile();
+  const cameraInputRef = useRef(null);
+  const studentCameraRef = useRef(null);
+
   // Core state
   const [keyImages, setKeyImages] = useState([]);
   const [studentImages, setStudentImages] = useState([]);
@@ -37,6 +53,9 @@ export default function Home() {
   const [progress, setProgress] = useState(0);
   const [keyProcessed, setKeyProcessed] = useState(false);
   const [testProcessed, setTestProcessed] = useState(false);
+
+  // Mobile/UI state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Feature state
   const [activeTab, setActiveTab] = useState('grader');
@@ -284,6 +303,26 @@ export default function Home() {
   const handleDeleteTemplate = (id) => { const n = templates.filter(t => t.id !== id); setTemplates(n); saveLocal('templates', n); };
   const handleSaveRubric = (r) => { setRubric(r); saveLocal('rubric', r); setStatus('Rubric saved!'); };
 
+  // Mobile camera capture handlers
+  const handleCameraCapture = (e, type) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      if (type === 'key') {
+        handleKeyFilesSelected(files);
+      } else {
+        handleStudentFilesSelected(files);
+      }
+    }
+  };
+
+  // Quick action for teachers - grade last used key
+  const quickGrade = () => {
+    if (savedKeys.length > 0 && !keyProcessed) {
+      handleSelectSavedKey(savedKeys[0]);
+    }
+    setActiveTab('grader');
+  };
+
   const tabs = [
     { id: 'grader', label: 'Grader', icon: '📝' },
     { id: 'results', label: 'Results', icon: '📊', disabled: results.length === 0 },
@@ -296,51 +335,118 @@ export default function Home() {
 
   return (
     <ThemeProvider>
-      <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
-        {/* Sidebar */}
-        <div className="w-56 bg-white dark:bg-gray-800 shadow-md flex flex-col">
-          <div className="p-4 border-b dark:border-gray-700">
+      <div className="flex flex-col md:flex-row min-h-screen bg-gray-100 dark:bg-gray-900">
+        {/* Mobile Header */}
+        {isMobile && (
+          <div className="sticky top-0 z-50 bg-white dark:bg-gray-800 shadow-md p-3 flex items-center justify-between">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 min-h-[44px] min-w-[44px] flex items-center justify-center"
+              aria-label="Toggle menu"
+            >
+              <span className="text-xl">{sidebarOpen ? '✕' : '☰'}</span>
+            </button>
             <h1 className="text-lg font-bold dark:text-white">Math Grader</h1>
-            <p className="text-xs text-gray-500">AI-Powered</p>
-          </div>
-          <nav className="flex-1 p-2">
-            {tabs.map(tab => (
-              <button key={tab.id} onClick={() => !tab.disabled && setActiveTab(tab.id)}
-                disabled={tab.disabled}
-                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg mb-1 text-sm ${
-                  activeTab === tab.id ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' :
-                  tab.disabled ? 'text-gray-400 cursor-not-allowed' :
-                  'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}>
-                <span>{tab.icon}</span><span>{tab.label}</span>
-              </button>
-            ))}
-          </nav>
-          <div className="p-3 border-t dark:border-gray-700">
             <ThemeToggle />
+          </div>
+        )}
+
+        {/* Sidebar - Hidden on mobile unless open */}
+        <div className={`
+          ${isMobile ? 'fixed inset-0 z-40 transform transition-transform duration-300' : 'relative'}
+          ${isMobile && !sidebarOpen ? '-translate-x-full' : 'translate-x-0'}
+          ${isMobile ? 'w-full' : 'w-56'}
+          bg-white dark:bg-gray-800 shadow-md flex flex-col
+          ${isMobile ? 'pt-16' : ''}
+        `}>
+          {/* Overlay for mobile */}
+          {isMobile && sidebarOpen && (
+            <div
+              className="absolute inset-0 bg-black/50 -z-10"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+
+          <div className={`${isMobile ? 'w-72 h-full bg-white dark:bg-gray-800' : 'w-full'} flex flex-col`}>
+            {!isMobile && (
+              <div className="p-4 border-b dark:border-gray-700">
+                <h1 className="text-lg font-bold dark:text-white">Math Grader</h1>
+                <p className="text-xs text-gray-500">AI-Powered</p>
+              </div>
+            )}
+
+            {/* Teacher Quick Actions */}
+            <div className="p-3 border-b dark:border-gray-700 bg-blue-50 dark:bg-blue-900/30">
+              <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">Quick Actions</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { quickGrade(); setSidebarOpen(false); }}
+                  className="flex-1 py-2 px-3 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 min-h-[44px]"
+                >
+                  Quick Grade
+                </button>
+                {results.length > 0 && (
+                  <button
+                    onClick={() => { setActiveTab('results'); setSidebarOpen(false); }}
+                    className="flex-1 py-2 px-3 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 min-h-[44px]"
+                  >
+                    View Results
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <nav className="flex-1 p-2 overflow-auto">
+              {tabs.map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => { if (!tab.disabled) { setActiveTab(tab.id); setSidebarOpen(false); }}}
+                  disabled={tab.disabled}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg mb-1 text-base min-h-[48px] ${
+                    activeTab === tab.id ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200' :
+                    tab.disabled ? 'text-gray-400 cursor-not-allowed' :
+                    'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  }`}
+                >
+                  <span className="text-lg">{tab.icon}</span>
+                  <span>{tab.label}</span>
+                  {tab.id === 'results' && results.length > 0 && (
+                    <span className="ml-auto bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                      {results.length}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </nav>
+
+            {!isMobile && (
+              <div className="p-3 border-t dark:border-gray-700">
+                <ThemeToggle />
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Main */}
-        <div className="flex-1 overflow-auto p-4">
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto p-3 md:p-4">
           <div className="max-w-4xl mx-auto">
             {/* Grader */}
             {activeTab === 'grader' && (
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Grade Assignments</CardTitle>
+                  <CardHeader className="pb-3 md:pb-6">
+                    <CardTitle className="text-lg md:text-xl">Grade Assignments</CardTitle>
                     <CardDescription>Upload answer key and student tests</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-6">
+                  <CardContent className="space-y-4 md:space-y-6">
                     {/* Answer Key */}
                     <div>
-                      <h3 className="font-semibold mb-2">1. Answer Key</h3>
+                      <h3 className="font-semibold mb-2 text-base">1. Answer Key</h3>
                       {savedKeys.length > 0 && (
                         <div className="flex flex-wrap gap-2 mb-3">
                           {savedKeys.slice(0, 5).map(key => (
                             <button key={key.id} onClick={() => handleSelectSavedKey(key)}
-                              className={`px-3 py-1 rounded-full text-xs border ${
+                              className={`px-4 py-2 rounded-full text-sm border min-h-[44px] ${
                                 selectedKeyId === key.id ? 'bg-blue-500 text-white' : 'bg-white dark:bg-gray-800 hover:border-blue-500'
                               }`}>
                               Key #{key.id}
@@ -348,44 +454,102 @@ export default function Home() {
                           ))}
                         </div>
                       )}
+
+                      {/* Mobile Camera Capture */}
+                      {isMobile && (
+                        <div className="mb-3">
+                          <input
+                            ref={cameraInputRef}
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={(e) => handleCameraCapture(e, 'key')}
+                            multiple
+                          />
+                          <button
+                            onClick={() => cameraInputRef.current?.click()}
+                            className="w-full py-4 bg-blue-600 text-white rounded-lg text-base font-medium flex items-center justify-center gap-2 min-h-[56px] active:bg-blue-700"
+                          >
+                            <span className="text-xl">📷</span> Take Photo of Answer Key
+                          </button>
+                        </div>
+                      )}
+
                       <DragDropUpload onFilesSelected={handleKeyFilesSelected} accept="image/*" multiple>
-                        <div className={`border-2 border-dashed rounded-lg p-4 text-center ${
-                          keyImages.length > 0 ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                        <div className={`border-2 border-dashed rounded-lg p-6 md:p-4 text-center min-h-[80px] flex items-center justify-center ${
+                          keyImages.length > 0 ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-300'
                         }`}>
-                          {keyImages.length > 0 ? `${keyImages.length} file(s)` : 'Drop answer key images or click'}
+                          {keyImages.length > 0 ? (
+                            <span className="text-green-700 dark:text-green-300 font-medium">{keyImages.length} file(s) selected</span>
+                          ) : (
+                            <span className="text-gray-500">{isMobile ? 'Tap to select files' : 'Drop answer key images or click'}</span>
+                          )}
                         </div>
                       </DragDropUpload>
                       {keyImages.length > 0 && (
-                        <Button onClick={processKey} disabled={loading} className="mt-2" size="sm">
+                        <Button onClick={processKey} disabled={loading} className="mt-3 w-full md:w-auto min-h-[48px]">
                           {loading ? 'Processing...' : 'Process Key'}
                         </Button>
                       )}
-                      {keyProcessed && <p className="text-green-600 text-sm mt-1">✓ Key ready</p>}
+                      {keyProcessed && <p className="text-green-600 text-sm mt-2 font-medium">✓ Key ready</p>}
                     </div>
 
                     {/* Student Tests */}
                     <div>
-                      <h3 className="font-semibold mb-2">2. Student Tests</h3>
+                      <h3 className="font-semibold mb-2 text-base">2. Student Tests</h3>
+
+                      {/* Mobile Camera Capture for Student Tests */}
+                      {isMobile && (
+                        <div className="mb-3">
+                          <input
+                            ref={studentCameraRef}
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            className="hidden"
+                            onChange={(e) => handleCameraCapture(e, 'student')}
+                            multiple
+                          />
+                          <button
+                            onClick={() => studentCameraRef.current?.click()}
+                            className="w-full py-4 bg-green-600 text-white rounded-lg text-base font-medium flex items-center justify-center gap-2 min-h-[56px] active:bg-green-700"
+                          >
+                            <span className="text-xl">📷</span> Take Photo of Student Test
+                          </button>
+                        </div>
+                      )}
+
                       <DragDropUpload onFilesSelected={handleStudentFilesSelected} accept="image/*" multiple>
-                        <div className={`border-2 border-dashed rounded-lg p-4 text-center ${
-                          studentImages.length > 0 ? 'border-green-500 bg-green-50' : 'border-gray-300'
+                        <div className={`border-2 border-dashed rounded-lg p-6 md:p-4 text-center min-h-[80px] flex items-center justify-center ${
+                          studentImages.length > 0 ? 'border-green-500 bg-green-50 dark:bg-green-900/20' : 'border-gray-300'
                         }`}>
-                          {studentImages.length > 0 ? `${studentImages.length} file(s)` : 'Drop student test images or click'}
+                          {studentImages.length > 0 ? (
+                            <span className="text-green-700 dark:text-green-300 font-medium">{studentImages.length} file(s) selected</span>
+                          ) : (
+                            <span className="text-gray-500">{isMobile ? 'Tap to select files' : 'Drop student test images or click'}</span>
+                          )}
                         </div>
                       </DragDropUpload>
-                      <Button onClick={processStudentTests} disabled={loading || !keyProcessed || studentImages.length === 0}
-                        className="mt-2" size="sm">
+                      <Button
+                        onClick={processStudentTests}
+                        disabled={loading || !keyProcessed || studentImages.length === 0}
+                        className="mt-3 w-full md:w-auto min-h-[48px]"
+                      >
                         {loading ? 'Grading...' : 'Grade Tests'}
                       </Button>
                     </div>
 
                     {/* Status */}
                     {status && (
-                      <div className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
-                        <p className="text-sm">{status}</p>
+                      <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                        <p className="text-sm font-medium">{status}</p>
                         {loading && (
-                          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
-                            <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${progress * 100}%` }} />
+                          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mt-3">
+                            <div
+                              className="bg-blue-600 h-3 rounded-full transition-all duration-300"
+                              style={{ width: `${progress * 100}%` }}
+                            />
                           </div>
                         )}
                       </div>
