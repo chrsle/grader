@@ -10,6 +10,7 @@ import { uploadImage, saveResult, saveKeyText, getKeys, deleteKey } from '../uti
 import { validateImages } from '../utils/inputValidation';
 import { processImagesInParallel } from '../utils/imageProcessing';
 import KeyQuestions from '../components/KeyQuestions';
+import ClassAnalytics from '../components/ClassAnalytics';
 
 export default function Home() {
   const [keyImages, setKeyImages] = useState([]);
@@ -433,6 +434,13 @@ export default function Home() {
                 })}
               </CardContent>
             </Card>
+          )}
+
+          {/* Class Analytics - shown after results */}
+          {results.length > 0 && (
+            <div className="mt-8">
+              <ClassAnalytics results={results} />
+            </div>
           )}
         </div>
       </div>
