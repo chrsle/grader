@@ -273,7 +273,7 @@ const ClassAnalytics = ({ results }) => {
                       <ul className="text-sm text-gray-600 mt-1">
                         {q.commonWrongAnswers.map(([answer, count], idx) => (
                           <li key={idx} className="ml-4">
-                            "{answer}" - {count} student{count > 1 ? 's' : ''}
+                            &quot;{answer}&quot; - {count} student{count > 1 ? 's' : ''}
                           </li>
                         ))}
                       </ul>

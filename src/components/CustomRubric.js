@@ -143,7 +143,7 @@ const CustomRubric = ({ rubric, onRubricChange, onSave }) => {
         <div>
           <h4 className="font-medium mb-3">Grading Categories</h4>
           <p className="text-sm text-gray-500 mb-3">
-            Define categories to group questions (e.g., "Computation", "Word Problems")
+            Define categories to group questions (e.g., &quot;Computation&quot;, &quot;Word Problems&quot;)
           </p>
 
           {/* Existing Categories */}
