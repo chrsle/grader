@@ -2,9 +2,19 @@ import OpenAI from 'openai';
 import { validateApiKey, unauthorizedResponse } from '../../../utils/auth';
 import { rateLimit, rateLimitResponse, getClientIdentifier } from '../../../utils/rateLimit';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Lazy initialization of OpenAI client to avoid crashes when env var is missing
+let openai = null;
+function getOpenAIClient() {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is not configured');
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return openai;
+}
 
 // Maximum allowed input length to prevent abuse
 const MAX_INPUT_LENGTH = 10000;
@@ -59,7 +69,7 @@ export async function POST(req) {
     // Sanitize input to prevent prompt injection
     const sanitizedText = sanitizeInput(extractedText);
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAIClient().chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
         {
