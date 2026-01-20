@@ -1,44 +1,25 @@
 import Tesseract from 'tesseract.js';
 
 export const extractTextFromImage = async (imageFile, progressCallback) => {
-  console.log('Starting extractTextFromImage function');
-  console.log('Image file:', imageFile);
-
   try {
-    console.log('Converting File to base64');
     const base64Image = await new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => {
-        console.log('File read successfully');
-        resolve(reader.result);
-      };
-      reader.onerror = (error) => {
-        console.error('Error reading file:', error);
-        reject(error);
-      };
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = (error) => reject(error);
       reader.readAsDataURL(imageFile);
     });
-    console.log('Base64 conversion complete');
 
-    console.log('Starting text recognition');
     const result = await Tesseract.recognize(base64Image, 'eng', {
       logger: m => {
-        console.log(m);
         if (m.status === 'recognizing text' && typeof progressCallback === 'function') {
           progressCallback(m.progress);
         }
       }
     });
-    console.log('Text recognition complete');
 
-    const text = result.data.text;
-    console.log('Extracted text:', text);
-
-    return text;
+    return result.data.text;
   } catch (error) {
-    console.error('Error in extractTextFromImage:', error);
-    console.error('Error stack:', error.stack);
-    throw error;
+    throw new Error(`Failed to extract text from image: ${error.message}`);
   }
 };
 
