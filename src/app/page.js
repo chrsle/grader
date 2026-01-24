@@ -33,7 +33,7 @@ export default function Home() {
       const keys = await getKeys();
       setSavedKeys(keys);
     } catch (error) {
-      console.error('Error fetching saved keys:', error);
+      // console.error('Error fetching saved keys:', error);
       setStatus('Error fetching saved keys');
     }
   };
@@ -45,7 +45,7 @@ export default function Home() {
       setKeyImages(files);
       setKeyProcessed(false);
     } catch (error) {
-      console.error('Error in handleKeyUpload:', error);
+      // console.error('Error in handleKeyUpload:', error);
       setStatus(error.message);
     }
   };
@@ -57,7 +57,7 @@ export default function Home() {
       setStudentImages(files);
       setTestProcessed(false);
     } catch (error) {
-      console.error('Error in handleStudentUpload:', error);
+      // console.error('Error in handleStudentUpload:', error);
       setStatus(error.message);
     }
   };
@@ -76,11 +76,11 @@ export default function Home() {
       const fullKeyText = texts.join('\n');
       
       const parsedQuestions = parseQuestions(fullKeyText);
-      console.log('Parsed key questions:', parsedQuestions);
+      // console.log('Parsed key questions:', parsedQuestions);
 
       setStatus('Saving key...');
       const savedKey = await saveKeyText(JSON.stringify(parsedQuestions));
-      console.log('Saved key:', savedKey);
+      // console.log('Saved key:', savedKey);
 
       setKeyText(JSON.stringify(parsedQuestions));
       setParsedKeyQuestions(parsedQuestions);
@@ -88,7 +88,7 @@ export default function Home() {
       setStatus('Key processed and saved successfully.');
       fetchSavedKeys();
     } catch (error) {
-      console.error('Error processing or saving key:', error);
+      // console.error('Error processing or saving key:', error);
       setStatus(`Error processing or saving key: ${error.message}`);
       setKeyProcessed(false);
     } finally {
@@ -119,7 +119,7 @@ export default function Home() {
       for (let i = 0; i < texts.length; i++) {
         const studentText = texts[i];
         const parsedStudentAnswers = parseQuestions(studentText);
-        console.log('Parsed student answers:', parsedStudentAnswers);
+        // console.log('Parsed student answers:', parsedStudentAnswers);
 
         const testType = 'Math Test';
         const studentName = `Student ${i + 1}`;
@@ -155,7 +155,7 @@ export default function Home() {
       setTestProcessed(true);
       setStatus('All student tests processed successfully.');
     } catch (error) {
-      console.error('Error processing student tests:', error);
+      // console.error('Error processing student tests:', error);
       setStatus(`Error: ${error.message}`);
       setTestProcessed(false);
     } finally {
