@@ -160,7 +160,7 @@ export default function Home() {
       if (t) setTemplates(JSON.parse(t));
       if (r) setRubric(JSON.parse(r));
       if (p) setPreviousResults(JSON.parse(p));
-    } catch (e) { console.error('Error loading localStorage:', e); }
+    } catch (e) { /* ignore localStorage errors */ }
   };
 
   const saveLocal = (key, value) => {
@@ -231,7 +231,10 @@ export default function Home() {
         setProgress(p); setStatus(`Processing... ${Math.round(p * 100)}%`);
       });
       const parsedQuestions = parseQuestions(texts.join('\n'));
+
+      setStatus('Saving key...');
       const savedKey = await saveKeyText(JSON.stringify(parsedQuestions));
+
       setKeyText(JSON.stringify(parsedQuestions));
       setParsedKeyQuestions(parsedQuestions);
       setKeyProcessed(true);
@@ -239,7 +242,7 @@ export default function Home() {
       setStatus('Key saved!');
       fetchSavedKeys();
     } catch (error) {
-      setStatus(`Error: ${error.message}`);
+      setStatus(`Error processing or saving key: ${error.message}`);
       setKeyProcessed(false);
     } finally { setLoading(false); setProgress(0); }
   };

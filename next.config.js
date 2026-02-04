@@ -1,8 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  env: {
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-  },
+  // SECURITY: Do not expose server-side secrets to client via env config
+  // Service role key should only be used in API routes
   webpack: (config, { isServer, dev }) => {
     if (!isServer) {
       config.output.globalObject = 'self';
