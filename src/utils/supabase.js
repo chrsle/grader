@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Client-side Supabase client (uses public anon key)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_KEY;
 
@@ -36,7 +37,9 @@ export const saveResult = async (testType, studentName, imagePath, studentAnswer
       image_path: imagePath,
       student_answers: studentAnswers,
       verification_result: verificationResult,
-    });
+    })
+    .select()
+    .single();
 
   if (error) throw error;
   return data;
@@ -45,7 +48,9 @@ export const saveResult = async (testType, studentName, imagePath, studentAnswer
 export const saveKeyText = async (keyText) => {
   const { data, error } = await supabase
     .from('answer_keys')
-    .insert({ extracted_text: keyText });
+    .insert({ extracted_text: keyText })
+    .select()
+    .single();
 
   if (error) throw error;
   return data;
@@ -54,17 +59,21 @@ export const saveKeyText = async (keyText) => {
 export const getKeys = async () => {
   const { data, error } = await supabase
     .from('answer_keys')
-    .select('*');
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(50);
 
   if (error) throw error;
-  return data;
+  return data || [];
 };
 
 export const deleteKey = async (keyId) => {
   const { data, error } = await supabase
     .from('answer_keys')
     .delete()
-    .eq('id', keyId);
+    .eq('id', keyId)
+    .select()
+    .single();
 
   if (error) throw error;
   return data;
