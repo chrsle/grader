@@ -136,7 +136,7 @@ const ClassAnalytics = ({ results }) => {
             <StatBox
               label="Class Average"
               value={`${overall.average.toFixed(1)}%`}
-              color={overall.average >= 70 ? 'green' : overall.average >= 60 ? 'yellow' : 'red'}
+              color={overall.average >= GRADE_BOUNDARIES.C ? 'green' : overall.average >= GRADE_BOUNDARIES.D ? 'yellow' : 'red'}
             />
             <StatBox
               label="Median Score"
@@ -146,7 +146,7 @@ const ClassAnalytics = ({ results }) => {
               label="Pass Rate"
               value={`${overall.passRate.toFixed(0)}%`}
               subtitle={`${Math.round(overall.passRate * overall.totalStudents / 100)}/${overall.totalStudents} students`}
-              color={overall.passRate >= 70 ? 'green' : overall.passRate >= 50 ? 'yellow' : 'red'}
+              color={overall.passRate >= GRADE_BOUNDARIES.C ? 'green' : overall.passRate >= 50 ? 'yellow' : 'red'}
             />
             <StatBox
               label="Perfect Scores"
@@ -208,8 +208,8 @@ const ClassAnalytics = ({ results }) => {
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-medium">Question {q.questionNumber}</span>
                   <span className={`px-2 py-1 rounded text-sm ${
-                    q.successRate >= 80 ? 'bg-green-100 text-green-800' :
-                    q.successRate >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                    q.successRate >= GRADE_BOUNDARIES.B ? 'bg-green-100 text-green-800' :
+                    q.successRate >= GRADE_BOUNDARIES.D ? 'bg-yellow-100 text-yellow-800' :
                     'bg-red-100 text-red-800'
                   }`}>
                     {q.successRate.toFixed(0)}% correct
@@ -220,8 +220,8 @@ const ClassAnalytics = ({ results }) => {
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-full rounded-full ${
-                        q.successRate >= 80 ? 'bg-green-500' :
-                        q.successRate >= 60 ? 'bg-yellow-500' :
+                        q.successRate >= GRADE_BOUNDARIES.B ? 'bg-green-500' :
+                        q.successRate >= GRADE_BOUNDARIES.D ? 'bg-yellow-500' :
                         'bg-red-500'
                       }`}
                       style={{ width: `${q.successRate}%` }}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getApiHeaders, API_FETCH_TIMEOUT_MS } from '../utils/constants';
 
 const GradingCriteriaForm = ({ testType, onSave, questions = [] }) => {
   const [criteria, setCriteria] = useState([]);
@@ -9,7 +10,15 @@ const GradingCriteriaForm = ({ testType, onSave, questions = [] }) => {
     const fetchCriteria = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`/api/grading-criteria?testType=${encodeURIComponent(testType)}`);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), API_FETCH_TIMEOUT_MS);
+
+        const response = await fetch(
+          `/api/grading-criteria?testType=${encodeURIComponent(testType)}`,
+          { headers: getApiHeaders(), signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+
         if (response.ok) {
           const savedCriteria = await response.json();
           if (savedCriteria && savedCriteria.length > 0) {
@@ -21,8 +30,7 @@ const GradingCriteriaForm = ({ testType, onSave, questions = [] }) => {
         } else {
           throw new Error('Failed to fetch grading criteria');
         }
-      } catch (error) {
-        console.error('Error fetching grading criteria:', error);
+      } catch (err) {
         setError('Failed to load grading criteria. Using default values.');
         setCriteria(questions.map((_, index) => ({ question: `Question ${index + 1}`, weight: 1 })));
       } finally {
@@ -41,13 +49,16 @@ const GradingCriteriaForm = ({ testType, onSave, questions = [] }) => {
 
   const handleSave = async () => {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), API_FETCH_TIMEOUT_MS);
+
       const response = await fetch('/api/grading-criteria', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getApiHeaders(),
         body: JSON.stringify({ testType, criteria }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         throw new Error('Failed to save grading criteria');
@@ -55,8 +66,7 @@ const GradingCriteriaForm = ({ testType, onSave, questions = [] }) => {
 
       onSave(criteria);
       setError(null);
-    } catch (error) {
-      console.error('Error saving grading criteria:', error);
+    } catch (err) {
       setError('Failed to save grading criteria. Please try again.');
     }
   };
@@ -81,8 +91,8 @@ const GradingCriteriaForm = ({ testType, onSave, questions = [] }) => {
           />
         </div>
       ))}
-      <button 
-        onClick={handleSave} 
+      <button
+        onClick={handleSave}
         className="bg-green-500 text-white px-4 py-2 rounded mt-2"
       >
         Save Criteria
