@@ -8,7 +8,7 @@ import { uploadImage, saveResult, saveKeyText, getKeys, deleteKey } from '../uti
 import { validateImages } from '../utils/inputValidation';
 import { processImagesInParallel } from '../utils/imageProcessing';
 import { calculateTopicMastery, getRecommendedReviewTopics } from '../utils/topicUtils';
-import { getLetterGrade, getGradeDistribution, GRADE_BOUNDARIES } from '../utils/constants';
+import { getLetterGrade, getGradeDistribution, GRADE_BOUNDARIES, getApiHeaders, API_FETCH_TIMEOUT_MS } from '../utils/constants';
 
 // Components
 import KeyQuestions from '../components/KeyQuestions';
@@ -258,40 +258,58 @@ export default function Home() {
         setStatus(`OCR... ${Math.round(p * 50)}%`);
       });
 
+      const errors = [];
       for (let i = 0; i < texts.length; i++) {
         const studentText = texts[i];
         const rosterStudent = students[i];
         const studentName = rosterStudent?.name || `Student ${i + 1}`;
 
-        setStatus(`Grading ${studentName}...`);
+        setStatus(`Grading ${studentName}... (${i + 1}/${texts.length})`);
         setProgress(0.5 + (i / texts.length) * 0.4);
 
-        const response = await fetch('/api/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ extractedText: studentText, keyText }),
-        });
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), API_FETCH_TIMEOUT_MS);
 
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || 'Verification failed');
+          const response = await fetch('/api/verify', {
+            method: 'POST',
+            headers: getApiHeaders(),
+            body: JSON.stringify({ extractedText: studentText, keyText }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || `Verification failed (${response.status})`);
+          }
+
+          const data = await response.json();
+          const testType = rubric?.name || 'Math Test';
+          const imagePath = await uploadImage(studentImages[i], `student_${i+1}_${Date.now()}.png`);
+          const savedResult = await saveResult(testType, studentName, imagePath,
+            JSON.stringify(parseQuestions(studentText)), data.result);
+
+          newResults.push({
+            studentNumber: i + 1, testType, studentName,
+            verificationResult: data.result, savedResult, email: rosterStudent?.email
+          });
+        } catch (studentError) {
+          errors.push({ studentName, error: studentError.message });
+          newResults.push({
+            studentNumber: i + 1, testType: rubric?.name || 'Math Test', studentName,
+            verificationResult: [], error: studentError.message, email: rosterStudent?.email
+          });
         }
-
-        const data = await response.json();
-        const testType = rubric?.name || 'Math Test';
-        const imagePath = await uploadImage(studentImages[i], `student_${i+1}_${Date.now()}.png`);
-        const savedResult = await saveResult(testType, studentName, imagePath,
-          JSON.stringify(parseQuestions(studentText)), data.result);
-
-        newResults.push({
-          studentNumber: i + 1, testType, studentName,
-          verificationResult: data.result, savedResult, email: rosterStudent?.email
-        });
       }
 
       setResults(newResults);
       setTestProcessed(true);
-      setStatus('Grading complete!');
+      if (errors.length > 0) {
+        setStatus(`Grading complete with ${errors.length} error(s): ${errors.map(e => e.studentName).join(', ')}`);
+      } else {
+        setStatus('Grading complete!');
+      }
     } catch (error) {
       setStatus(`Error: ${error.message}`);
     } finally { setLoading(false); setProgress(0); }
@@ -610,7 +628,7 @@ export default function Home() {
                     })}
                   </CardContent>
                 </Card>
-                <ExportPanel results={results} analytics={analytics} />
+                <ExportPanel results={results} analytics={analytics} rubricName={rubric?.name} />
               </div>
             )}
 

@@ -86,3 +86,26 @@ export const SUPABASE_STORAGE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_BUCKET |
 
 // --- Passing threshold ---
 export const DEFAULT_PASSING_THRESHOLD = 60;
+
+// --- Topic Mastery ---
+export const MASTERY_THRESHOLD = 80;     // >= this is "mastered"
+export const DEVELOPING_THRESHOLD = 60;  // >= this is "developing", below is "needs review"
+export const REVIEW_THRESHOLD = 70;      // topics below this are recommended for review
+
+// --- API fetch timeout (ms) ---
+export const API_FETCH_TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT_MS, 10) || 30000;
+
+/**
+ * Build standard headers for internal API calls from the client.
+ * Includes the API key if configured (via NEXT_PUBLIC_API_KEY).
+ */
+export function getApiHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  const apiKey = typeof window !== 'undefined'
+    ? process.env.NEXT_PUBLIC_API_KEY
+    : undefined;
+  if (apiKey) {
+    headers['Authorization'] = `Bearer ${apiKey}`;
+  }
+  return headers;
+}

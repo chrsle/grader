@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { getApiHeaders, API_FETCH_TIMEOUT_MS } from '../utils/constants';
 
 const PracticeGenerator = ({ weakTopics = [], results = [] }) => {
   const [generatedProblems, setGeneratedProblems] = useState([]);
@@ -25,16 +25,21 @@ const PracticeGenerator = ({ weakTopics = [], results = [] }) => {
         }
       });
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), API_FETCH_TIMEOUT_MS);
+
       const response = await fetch('/api/generate-practice', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getApiHeaders(),
         body: JSON.stringify({
           topic: selectedTopic,
           difficulty,
           count,
-          missedQuestions: missedQuestions.slice(0, 5) // Send sample of missed questions
-        })
+          missedQuestions: missedQuestions.slice(0, 5)
+        }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
@@ -44,8 +49,7 @@ const PracticeGenerator = ({ weakTopics = [], results = [] }) => {
         setGeneratedProblems(generateSampleProblems(selectedTopic, difficulty, count));
       }
     } catch (error) {
-      console.error('Error generating problems:', error);
-      // Fallback to sample problems
+      // Fallback to sample problems on network/timeout errors
       setGeneratedProblems(generateSampleProblems(selectedTopic, difficulty, count));
     } finally {
       setLoading(false);

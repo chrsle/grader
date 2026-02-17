@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { GRADE_BOUNDARIES } from '../utils/constants';
 
 const ComparativeAnalysis = ({ currentResults, previousResults = [], className = '' }) => {
   const comparison = useMemo(() => {
@@ -19,7 +20,7 @@ const ComparativeAnalysis = ({ currentResults, previousResults = [], className =
       average: currentScores.reduce((a, b) => a + b, 0) / currentScores.length,
       highest: Math.max(...currentScores),
       lowest: Math.min(...currentScores),
-      passRate: (currentScores.filter(s => s >= 60).length / currentScores.length) * 100,
+      passRate: (currentScores.filter(s => s >= GRADE_BOUNDARIES.D).length / currentScores.length) * 100,
       count: currentScores.length
     };
 
@@ -37,7 +38,7 @@ const ComparativeAnalysis = ({ currentResults, previousResults = [], className =
         average: prevScores.reduce((a, b) => a + b, 0) / prevScores.length,
         highest: Math.max(...prevScores),
         lowest: Math.min(...prevScores),
-        passRate: (prevScores.filter(s => s >= 60).length / prevScores.length) * 100,
+        passRate: (prevScores.filter(s => s >= GRADE_BOUNDARIES.D).length / prevScores.length) * 100,
         count: prevScores.length
       };
     }
