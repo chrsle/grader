@@ -13,7 +13,7 @@ import {
 } from '../utils/exportUtils';
 import { generateStudentEmail, openEmailClient, generateBulkEmailContent } from '../utils/emailUtils';
 
-const ExportPanel = ({ results, analytics, className = '' }) => {
+const ExportPanel = ({ results, analytics, className = '', rubricName = '' }) => {
   const [studentEmails, setStudentEmails] = useState({});
   const [showEmailSetup, setShowEmailSetup] = useState(false);
   const [exportStatus, setExportStatus] = useState('');
@@ -116,7 +116,7 @@ ${e.body}
               <h4 className="font-medium mb-3">Print Report</h4>
               <Button
                 variant="outline"
-                onClick={() => openPDFReport(results, analytics, 'Math Class')}
+                onClick={() => openPDFReport(results, analytics, rubricName || 'Math Class')}
               >
                 <PrintIcon className="h-4 w-4 mr-2" />
                 Open Printable Report

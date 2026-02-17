@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { calculateTopicMastery, getRecommendedReviewTopics, groupTopicsByCategory } from '../utils/topicUtils';
+import { MASTERY_THRESHOLD, DEVELOPING_THRESHOLD, REVIEW_THRESHOLD } from '../utils/constants';
 
 const TopicMastery = ({ results }) => {
   const { topicMastery, recommendedTopics, groupedTopics } = useMemo(() => {
@@ -29,7 +30,7 @@ const TopicMastery = ({ results }) => {
           <CardHeader>
             <CardTitle className="text-orange-800">Topics Needing Review</CardTitle>
             <CardDescription className="text-orange-600">
-              These topics have less than 70% mastery and should be reviewed
+              These topics have less than {REVIEW_THRESHOLD}% mastery and should be reviewed
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -73,8 +74,8 @@ const TopicMastery = ({ results }) => {
                 <h4 className="font-semibold text-gray-700 mb-3">{category}</h4>
                 <div className="grid gap-3">
                   {topics.map((topic) => {
-                    const masteryColor = topic.masteryPercentage >= 80 ? 'green' :
-                                        topic.masteryPercentage >= 60 ? 'yellow' : 'red';
+                    const masteryColor = topic.masteryPercentage >= MASTERY_THRESHOLD ? 'green' :
+                                        topic.masteryPercentage >= DEVELOPING_THRESHOLD ? 'yellow' : 'red';
                     const colorClasses = {
                       green: 'bg-green-100 text-green-800 border-green-200',
                       yellow: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -126,24 +127,24 @@ const TopicMastery = ({ results }) => {
           <div className="grid grid-cols-3 gap-4 text-center">
             <div className="p-4 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-600">
-                {topicMastery.filter(t => t.masteryPercentage >= 80).length}
+                {topicMastery.filter(t => t.masteryPercentage >= MASTERY_THRESHOLD).length}
               </div>
               <div className="text-sm text-green-700">Mastered Topics</div>
-              <div className="text-xs text-gray-500">≥80% correct</div>
+              <div className="text-xs text-gray-500">&ge;{MASTERY_THRESHOLD}% correct</div>
             </div>
             <div className="p-4 bg-yellow-50 rounded-lg">
               <div className="text-2xl font-bold text-yellow-600">
-                {topicMastery.filter(t => t.masteryPercentage >= 60 && t.masteryPercentage < 80).length}
+                {topicMastery.filter(t => t.masteryPercentage >= DEVELOPING_THRESHOLD && t.masteryPercentage < MASTERY_THRESHOLD).length}
               </div>
               <div className="text-sm text-yellow-700">Developing</div>
-              <div className="text-xs text-gray-500">60-79% correct</div>
+              <div className="text-xs text-gray-500">{DEVELOPING_THRESHOLD}-{MASTERY_THRESHOLD - 1}% correct</div>
             </div>
             <div className="p-4 bg-red-50 rounded-lg">
               <div className="text-2xl font-bold text-red-600">
-                {topicMastery.filter(t => t.masteryPercentage < 60).length}
+                {topicMastery.filter(t => t.masteryPercentage < DEVELOPING_THRESHOLD).length}
               </div>
               <div className="text-sm text-red-700">Needs Review</div>
-              <div className="text-xs text-gray-500">&lt;60% correct</div>
+              <div className="text-xs text-gray-500">&lt;{DEVELOPING_THRESHOLD}% correct</div>
             </div>
           </div>
         </CardContent>

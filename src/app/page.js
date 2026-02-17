@@ -8,6 +8,7 @@ import { uploadImage, saveResult, saveKeyText, getKeys, deleteKey } from '../uti
 import { validateImages } from '../utils/inputValidation';
 import { processImagesInParallel } from '../utils/imageProcessing';
 import { calculateTopicMastery, getRecommendedReviewTopics } from '../utils/topicUtils';
+import { getLetterGrade, getGradeDistribution, GRADE_BOUNDARIES, getApiHeaders, API_FETCH_TIMEOUT_MS, MOBILE_BREAKPOINT_PX, DEFAULT_TEST_TYPE, STORAGE_KEYS, API_ENDPOINTS, COMMON_MISTAKES_DISPLAY_LIMIT } from '../utils/constants';
 
 // Components
 import KeyQuestions from '../components/KeyQuestions';
@@ -27,7 +28,7 @@ import { ThemeProvider, ThemeToggle } from '../components/ThemeProvider';
 const useIsMobile = () => {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
+    const check = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT_PX);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
@@ -89,13 +90,7 @@ export default function Home() {
       ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
       : sorted[Math.floor(sorted.length / 2)];
 
-    const distribution = {
-      'A (90-100%)': percentages.filter(p => p >= 90).length,
-      'B (80-89%)': percentages.filter(p => p >= 80 && p < 90).length,
-      'C (70-79%)': percentages.filter(p => p >= 70 && p < 80).length,
-      'D (60-69%)': percentages.filter(p => p >= 60 && p < 70).length,
-      'F (0-59%)': percentages.filter(p => p < 60).length,
-    };
+    const distribution = getGradeDistribution(percentages);
 
     const questionStats = {};
     results.forEach(result => {
@@ -120,7 +115,7 @@ export default function Home() {
       missedCount: q.totalCount - q.correctCount
     })).sort((a, b) => a.successRate - b.successRate);
 
-    const commonMistakes = questionAnalysis.filter(q => q.missedCount > 0).slice(0, 3).map(q => ({
+    const commonMistakes = questionAnalysis.filter(q => q.missedCount > 0).slice(0, COMMON_MISTAKES_DISPLAY_LIMIT).map(q => ({
       ...q,
       commonWrongAnswers: Object.entries(
         q.incorrectAnswers.reduce((acc, ia) => {
@@ -136,7 +131,7 @@ export default function Home() {
     return {
       studentScores,
       overall: { average, median, highest: Math.max(...percentages), lowest: Math.min(...percentages),
-        passRate: (percentages.filter(p => p >= 60).length / percentages.length) * 100,
+        passRate: (percentages.filter(p => p >= GRADE_BOUNDARIES.D).length / percentages.length) * 100,
         perfectScores: percentages.filter(p => p === 100).length, stdDev, totalStudents: results.length },
       distribution, questionAnalysis, commonMistakes
     };
@@ -152,10 +147,10 @@ export default function Home() {
 
   const loadFromLocalStorage = () => {
     try {
-      const s = localStorage.getItem('grader_students');
-      const t = localStorage.getItem('grader_templates');
-      const r = localStorage.getItem('grader_rubric');
-      const p = localStorage.getItem('grader_prev_results');
+      const s = localStorage.getItem(STORAGE_KEYS.STUDENTS);
+      const t = localStorage.getItem(STORAGE_KEYS.TEMPLATES);
+      const r = localStorage.getItem(STORAGE_KEYS.RUBRIC);
+      const p = localStorage.getItem(STORAGE_KEYS.PREV_RESULTS);
       if (s) setStudents(JSON.parse(s));
       if (t) setTemplates(JSON.parse(t));
       if (r) setRubric(JSON.parse(r));
@@ -163,8 +158,8 @@ export default function Home() {
     } catch (e) { /* ignore localStorage errors */ }
   };
 
-  const saveLocal = (key, value) => {
-    try { localStorage.setItem(`grader_${key}`, JSON.stringify(value)); } catch (e) {}
+  const saveLocal = (storageKey, value) => {
+    try { localStorage.setItem(storageKey, JSON.stringify(value)); } catch (e) {}
   };
 
   const fetchSavedKeys = async () => {
@@ -253,7 +248,7 @@ export default function Home() {
 
     if (results.length > 0) {
       setPreviousResults(results);
-      saveLocal('prev_results', results);
+      saveLocal(STORAGE_KEYS.PREV_RESULTS, results);
     }
 
     try {
@@ -263,48 +258,67 @@ export default function Home() {
         setStatus(`OCR... ${Math.round(p * 50)}%`);
       });
 
+      const errors = [];
       for (let i = 0; i < texts.length; i++) {
         const studentText = texts[i];
         const rosterStudent = students[i];
         const studentName = rosterStudent?.name || `Student ${i + 1}`;
 
-        setStatus(`Grading ${studentName}...`);
+        setStatus(`Grading ${studentName}... (${i + 1}/${texts.length})`);
         setProgress(0.5 + (i / texts.length) * 0.4);
 
-        const response = await fetch('/api/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ extractedText: studentText, keyText }),
-        });
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), API_FETCH_TIMEOUT_MS);
 
-        if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || 'Verification failed');
+          const response = await fetch(API_ENDPOINTS.VERIFY, {
+            method: 'POST',
+            headers: getApiHeaders(),
+            body: JSON.stringify({ extractedText: studentText, keyText }),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+
+          if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || `Verification failed (${response.status})`);
+          }
+
+          const data = await response.json();
+          const testType = rubric?.name || DEFAULT_TEST_TYPE;
+          const imagePath = await uploadImage(studentImages[i], `student_${i+1}_${Date.now()}.png`);
+          const savedResult = await saveResult(testType, studentName, imagePath,
+            JSON.stringify(parseQuestions(studentText)), data.result);
+
+          newResults.push({
+            studentNumber: i + 1, testType, studentName,
+            verificationResult: data.result, savedResult, email: rosterStudent?.email
+          });
+        } catch (studentError) {
+          errors.push({ studentName, error: studentError.message });
+          newResults.push({
+            studentNumber: i + 1, testType: rubric?.name || DEFAULT_TEST_TYPE, studentName,
+            verificationResult: [], error: studentError.message, email: rosterStudent?.email
+          });
         }
-
-        const data = await response.json();
-        const imagePath = await uploadImage(studentImages[i], `student_${i+1}_${Date.now()}.png`);
-        const savedResult = await saveResult('Math Test', studentName, imagePath,
-          JSON.stringify(parseQuestions(studentText)), data.result);
-
-        newResults.push({
-          studentNumber: i + 1, testType: 'Math Test', studentName,
-          verificationResult: data.result, savedResult, email: rosterStudent?.email
-        });
       }
 
       setResults(newResults);
       setTestProcessed(true);
-      setStatus('Grading complete!');
+      if (errors.length > 0) {
+        setStatus(`Grading complete with ${errors.length} error(s): ${errors.map(e => e.studentName).join(', ')}`);
+      } else {
+        setStatus('Grading complete!');
+      }
     } catch (error) {
       setStatus(`Error: ${error.message}`);
     } finally { setLoading(false); setProgress(0); }
   };
 
-  const handleStudentsChange = (s) => { setStudents(s); saveLocal('students', s); };
-  const handleSaveTemplate = (t) => { const n = [...templates, t]; setTemplates(n); saveLocal('templates', n); };
-  const handleDeleteTemplate = (id) => { const n = templates.filter(t => t.id !== id); setTemplates(n); saveLocal('templates', n); };
-  const handleSaveRubric = (r) => { setRubric(r); saveLocal('rubric', r); setStatus('Rubric saved!'); };
+  const handleStudentsChange = (s) => { setStudents(s); saveLocal(STORAGE_KEYS.STUDENTS, s); };
+  const handleSaveTemplate = (t) => { const n = [...templates, t]; setTemplates(n); saveLocal(STORAGE_KEYS.TEMPLATES, n); };
+  const handleDeleteTemplate = (id) => { const n = templates.filter(t => t.id !== id); setTemplates(n); saveLocal(STORAGE_KEYS.TEMPLATES, n); };
+  const handleSaveRubric = (r) => { setRubric(r); saveLocal(STORAGE_KEYS.RUBRIC, r); setStatus('Rubric saved!'); };
 
   // Mobile camera capture handlers
   const handleCameraCapture = (e, type) => {
@@ -349,7 +363,7 @@ export default function Home() {
             >
               <span className="text-xl">{sidebarOpen ? '✕' : '☰'}</span>
             </button>
-            <h1 className="text-lg font-bold dark:text-white">Math Grader</h1>
+            <h1 className="text-lg font-bold dark:text-white">Grader</h1>
             <ThemeToggle />
           </div>
         )}
@@ -373,7 +387,7 @@ export default function Home() {
           <div className={`${isMobile ? 'w-72 h-full bg-white dark:bg-gray-800' : 'w-full'} flex flex-col`}>
             {!isMobile && (
               <div className="p-4 border-b dark:border-gray-700">
-                <h1 className="text-lg font-bold dark:text-white">Math Grader</h1>
+                <h1 className="text-lg font-bold dark:text-white">Grader</h1>
                 <p className="text-xs text-gray-500">AI-Powered</p>
               </div>
             )}
@@ -458,26 +472,24 @@ export default function Home() {
                         </div>
                       )}
 
-                      {/* Mobile Camera Capture */}
-                      {isMobile && (
-                        <div className="mb-3">
-                          <input
-                            ref={cameraInputRef}
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            className="hidden"
-                            onChange={(e) => handleCameraCapture(e, 'key')}
-                            multiple
-                          />
-                          <button
-                            onClick={() => cameraInputRef.current?.click()}
-                            className="w-full py-4 bg-blue-600 text-white rounded-lg text-base font-medium flex items-center justify-center gap-2 min-h-[56px] active:bg-blue-700"
-                          >
-                            <span className="text-xl">📷</span> Take Photo of Answer Key
-                          </button>
-                        </div>
-                      )}
+                      {/* Camera Capture (mobile uses native camera, desktop uses file picker) */}
+                      <div className="mb-3">
+                        <input
+                          ref={cameraInputRef}
+                          type="file"
+                          accept="image/*"
+                          {...(isMobile ? { capture: 'environment' } : {})}
+                          className="hidden"
+                          onChange={(e) => handleCameraCapture(e, 'key')}
+                          multiple
+                        />
+                        <button
+                          onClick={() => cameraInputRef.current?.click()}
+                          className="w-full py-4 bg-blue-600 text-white rounded-lg text-base font-medium flex items-center justify-center gap-2 min-h-[56px] active:bg-blue-700"
+                        >
+                          <span className="text-xl">📷</span> {isMobile ? 'Take Photo of Answer Key' : 'Capture Answer Key Image'}
+                        </button>
+                      </div>
 
                       <DragDropUpload onFilesSelected={handleKeyFilesSelected} accept="image/*" multiple>
                         <div className={`border-2 border-dashed rounded-lg p-6 md:p-4 text-center min-h-[80px] flex items-center justify-center ${
@@ -502,26 +514,24 @@ export default function Home() {
                     <div>
                       <h3 className="font-semibold mb-2 text-base">2. Student Tests</h3>
 
-                      {/* Mobile Camera Capture for Student Tests */}
-                      {isMobile && (
-                        <div className="mb-3">
-                          <input
-                            ref={studentCameraRef}
-                            type="file"
-                            accept="image/*"
-                            capture="environment"
-                            className="hidden"
-                            onChange={(e) => handleCameraCapture(e, 'student')}
-                            multiple
-                          />
-                          <button
-                            onClick={() => studentCameraRef.current?.click()}
-                            className="w-full py-4 bg-green-600 text-white rounded-lg text-base font-medium flex items-center justify-center gap-2 min-h-[56px] active:bg-green-700"
-                          >
-                            <span className="text-xl">📷</span> Take Photo of Student Test
-                          </button>
-                        </div>
-                      )}
+                      {/* Camera Capture for Student Tests */}
+                      <div className="mb-3">
+                        <input
+                          ref={studentCameraRef}
+                          type="file"
+                          accept="image/*"
+                          {...(isMobile ? { capture: 'environment' } : {})}
+                          className="hidden"
+                          onChange={(e) => handleCameraCapture(e, 'student')}
+                          multiple
+                        />
+                        <button
+                          onClick={() => studentCameraRef.current?.click()}
+                          className="w-full py-4 bg-green-600 text-white rounded-lg text-base font-medium flex items-center justify-center gap-2 min-h-[56px] active:bg-green-700"
+                        >
+                          <span className="text-xl">📷</span> {isMobile ? 'Take Photo of Student Test' : 'Capture Student Test Image'}
+                        </button>
+                      </div>
 
                       <DragDropUpload onFilesSelected={handleStudentFilesSelected} accept="image/*" multiple>
                         <div className={`border-2 border-dashed rounded-lg p-6 md:p-4 text-center min-h-[80px] flex items-center justify-center ${
@@ -593,7 +603,7 @@ export default function Home() {
                         <div key={i} className="p-4 border rounded-lg">
                           <div className="flex justify-between items-center mb-2">
                             <h3 className="font-semibold">{r.studentName}</h3>
-                            <span className={`text-xl font-bold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            <span className={`text-xl font-bold ${pct >= GRADE_BOUNDARIES.B ? 'text-green-600' : pct >= GRADE_BOUNDARIES.D ? 'text-yellow-600' : 'text-red-600'}`}>
                               {pct.toFixed(0)}%
                             </span>
                           </div>
@@ -614,7 +624,7 @@ export default function Home() {
                     })}
                   </CardContent>
                 </Card>
-                <ExportPanel results={results} analytics={analytics} />
+                <ExportPanel results={results} analytics={analytics} rubricName={rubric?.name} />
               </div>
             )}
 
@@ -652,7 +662,7 @@ export default function Home() {
                   <CardContent>
                     <Button variant="outline" size="sm" onClick={() => {
                       if (confirm('Clear all local data?')) {
-                        localStorage.clear();
+                        Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
                         setStudents([]); setTemplates([]); setRubric(null); setPreviousResults([]);
                       }
                     }}>Clear Local Data</Button>

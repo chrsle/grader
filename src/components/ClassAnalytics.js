@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { getLetterGrade, getGradeDistribution, GRADE_BOUNDARIES, GRADE_COLORS, DISTRIBUTION_BAR_COLORS } from '../utils/constants';
 
 const ClassAnalytics = ({ results }) => {
   const analytics = useMemo(() => {
@@ -32,7 +33,7 @@ const ClassAnalytics = ({ results }) => {
       : sorted[Math.floor(sorted.length / 2)];
     const highest = Math.max(...percentages);
     const lowest = Math.min(...percentages);
-    const passRate = (percentages.filter(p => p >= 60).length / percentages.length) * 100;
+    const passRate = (percentages.filter(p => p >= GRADE_BOUNDARIES.D).length / percentages.length) * 100;
     const perfectScores = percentages.filter(p => p === 100).length;
 
     // Standard deviation
@@ -41,13 +42,7 @@ const ClassAnalytics = ({ results }) => {
     const stdDev = Math.sqrt(avgSquaredDiff);
 
     // Score distribution buckets
-    const distribution = {
-      'A (90-100%)': percentages.filter(p => p >= 90).length,
-      'B (80-89%)': percentages.filter(p => p >= 80 && p < 90).length,
-      'C (70-79%)': percentages.filter(p => p >= 70 && p < 80).length,
-      'D (60-69%)': percentages.filter(p => p >= 60 && p < 70).length,
-      'F (0-59%)': percentages.filter(p => p < 60).length,
-    };
+    const distribution = getGradeDistribution(percentages);
 
     // Per-question analysis
     const questionStats = {};
@@ -141,7 +136,7 @@ const ClassAnalytics = ({ results }) => {
             <StatBox
               label="Class Average"
               value={`${overall.average.toFixed(1)}%`}
-              color={overall.average >= 70 ? 'green' : overall.average >= 60 ? 'yellow' : 'red'}
+              color={overall.average >= GRADE_BOUNDARIES.C ? 'green' : overall.average >= GRADE_BOUNDARIES.D ? 'yellow' : 'red'}
             />
             <StatBox
               label="Median Score"
@@ -151,7 +146,7 @@ const ClassAnalytics = ({ results }) => {
               label="Pass Rate"
               value={`${overall.passRate.toFixed(0)}%`}
               subtitle={`${Math.round(overall.passRate * overall.totalStudents / 100)}/${overall.totalStudents} students`}
-              color={overall.passRate >= 70 ? 'green' : overall.passRate >= 50 ? 'yellow' : 'red'}
+              color={overall.passRate >= GRADE_BOUNDARIES.C ? 'green' : overall.passRate >= 50 ? 'yellow' : 'red'}
             />
             <StatBox
               label="Perfect Scores"
@@ -178,19 +173,14 @@ const ClassAnalytics = ({ results }) => {
           <div className="space-y-3">
             {Object.entries(distribution).map(([grade, count]) => {
               const percentage = (count / overall.totalStudents) * 100;
-              const colors = {
-                'A (90-100%)': 'bg-green-500',
-                'B (80-89%)': 'bg-blue-500',
-                'C (70-79%)': 'bg-yellow-500',
-                'D (60-69%)': 'bg-orange-500',
-                'F (0-59%)': 'bg-red-500',
-              };
+              // Extract the letter from the grade label (first character)
+              const letter = grade.charAt(0);
               return (
                 <div key={grade} className="flex items-center gap-3">
                   <span className="w-24 text-sm font-medium">{grade}</span>
                   <div className="flex-1 bg-gray-200 rounded-full h-6 overflow-hidden">
                     <div
-                      className={`h-full ${colors[grade]} transition-all duration-500`}
+                      className={`h-full ${DISTRIBUTION_BAR_COLORS[letter] || 'bg-gray-500'} transition-all duration-500`}
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
@@ -217,8 +207,8 @@ const ClassAnalytics = ({ results }) => {
                 <div className="flex items-center justify-between mb-2">
                   <span className="font-medium">Question {q.questionNumber}</span>
                   <span className={`px-2 py-1 rounded text-sm ${
-                    q.successRate >= 80 ? 'bg-green-100 text-green-800' :
-                    q.successRate >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                    q.successRate >= GRADE_BOUNDARIES.B ? 'bg-green-100 text-green-800' :
+                    q.successRate >= GRADE_BOUNDARIES.D ? 'bg-yellow-100 text-yellow-800' :
                     'bg-red-100 text-red-800'
                   }`}>
                     {q.successRate.toFixed(0)}% correct
@@ -229,8 +219,8 @@ const ClassAnalytics = ({ results }) => {
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
                     <div
                       className={`h-full rounded-full ${
-                        q.successRate >= 80 ? 'bg-green-500' :
-                        q.successRate >= 60 ? 'bg-yellow-500' :
+                        q.successRate >= GRADE_BOUNDARIES.B ? 'bg-green-500' :
+                        q.successRate >= GRADE_BOUNDARIES.D ? 'bg-yellow-500' :
                         'bg-red-500'
                       }`}
                       style={{ width: `${q.successRate}%` }}
@@ -308,17 +298,7 @@ const ClassAnalytics = ({ results }) => {
                 {[...studentScores]
                   .sort((a, b) => b.percentage - a.percentage)
                   .map((student, idx) => {
-                    const grade = student.percentage >= 90 ? 'A' :
-                                  student.percentage >= 80 ? 'B' :
-                                  student.percentage >= 70 ? 'C' :
-                                  student.percentage >= 60 ? 'D' : 'F';
-                    const gradeColor = {
-                      A: 'bg-green-100 text-green-800',
-                      B: 'bg-blue-100 text-blue-800',
-                      C: 'bg-yellow-100 text-yellow-800',
-                      D: 'bg-orange-100 text-orange-800',
-                      F: 'bg-red-100 text-red-800'
-                    };
+                    const grade = getLetterGrade(student.percentage);
                     return (
                       <tr key={student.studentNumber} className="border-b hover:bg-gray-50">
                         <td className="py-2 px-2">{idx + 1}</td>
@@ -326,7 +306,7 @@ const ClassAnalytics = ({ results }) => {
                         <td className="py-2 px-2 text-center">{student.score}/{student.total}</td>
                         <td className="py-2 px-2 text-center">{student.percentage.toFixed(0)}%</td>
                         <td className="py-2 px-2 text-center">
-                          <span className={`px-2 py-1 rounded ${gradeColor[grade]}`}>
+                          <span className={`px-2 py-1 rounded ${GRADE_COLORS[grade]}`}>
                             {grade}
                           </span>
                         </td>

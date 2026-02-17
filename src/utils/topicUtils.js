@@ -1,4 +1,5 @@
 // Topic tagging and mastery tracking utilities
+import { REVIEW_THRESHOLD, MAX_REVIEW_TOPICS_DISPLAY } from './constants';
 
 // Predefined math topics with keywords for auto-detection
 export const MATH_TOPICS = {
@@ -157,7 +158,7 @@ export const calculateTopicMastery = (results) => {
   return Object.values(topicStats).map(topic => ({
     ...topic,
     masteryPercentage: topic.total > 0 ? (topic.correct / topic.total) * 100 : 0,
-    needsReview: topic.total > 0 && (topic.correct / topic.total) < 0.7
+    needsReview: topic.total > 0 && (topic.correct / topic.total) * 100 < REVIEW_THRESHOLD
   })).sort((a, b) => a.masteryPercentage - b.masteryPercentage);
 };
 
@@ -198,11 +199,11 @@ export const calculateStudentTopicMastery = (studentResults) => {
 /**
  * Get recommended topics for review based on class performance
  */
-export const getRecommendedReviewTopics = (topicMastery, threshold = 70) => {
+export const getRecommendedReviewTopics = (topicMastery, threshold = REVIEW_THRESHOLD) => {
   return topicMastery
     .filter(topic => topic.masteryPercentage < threshold)
     .sort((a, b) => a.masteryPercentage - b.masteryPercentage)
-    .slice(0, 5);
+    .slice(0, MAX_REVIEW_TOPICS_DISPLAY);
 };
 
 /**

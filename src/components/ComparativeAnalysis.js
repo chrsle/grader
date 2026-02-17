@@ -2,6 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { GRADE_BOUNDARIES, PERFORMANCE_CHANGE_THRESHOLD } from '../utils/constants';
 
 const ComparativeAnalysis = ({ currentResults, previousResults = [], className = '' }) => {
   const comparison = useMemo(() => {
@@ -19,7 +20,7 @@ const ComparativeAnalysis = ({ currentResults, previousResults = [], className =
       average: currentScores.reduce((a, b) => a + b, 0) / currentScores.length,
       highest: Math.max(...currentScores),
       lowest: Math.min(...currentScores),
-      passRate: (currentScores.filter(s => s >= 60).length / currentScores.length) * 100,
+      passRate: (currentScores.filter(s => s >= GRADE_BOUNDARIES.D).length / currentScores.length) * 100,
       count: currentScores.length
     };
 
@@ -37,7 +38,7 @@ const ComparativeAnalysis = ({ currentResults, previousResults = [], className =
         average: prevScores.reduce((a, b) => a + b, 0) / prevScores.length,
         highest: Math.max(...prevScores),
         lowest: Math.min(...prevScores),
-        passRate: (prevScores.filter(s => s >= 60).length / prevScores.length) * 100,
+        passRate: (prevScores.filter(s => s >= GRADE_BOUNDARIES.D).length / prevScores.length) * 100,
         count: prevScores.length
       };
     }
@@ -157,8 +158,8 @@ const ComparativeAnalysis = ({ currentResults, previousResults = [], className =
                     <div
                       key={idx}
                       className={`flex items-center justify-between p-2 rounded ${
-                        student.change > 5 ? 'bg-green-50 dark:bg-green-900/20' :
-                        student.change < -5 ? 'bg-red-50 dark:bg-red-900/20' :
+                        student.change > PERFORMANCE_CHANGE_THRESHOLD ? 'bg-green-50 dark:bg-green-900/20' :
+                        student.change < -PERFORMANCE_CHANGE_THRESHOLD ? 'bg-red-50 dark:bg-red-900/20' :
                         'bg-gray-50 dark:bg-gray-800'
                       }`}
                     >
@@ -182,19 +183,19 @@ const ComparativeAnalysis = ({ currentResults, previousResults = [], className =
               <div className="mt-4 grid grid-cols-3 gap-2 md:gap-4 text-center">
                 <div className="p-2 md:p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <div className="text-lg md:text-xl font-bold text-green-600">
-                    {studentImprovements.filter(s => s.change > 5).length}
+                    {studentImprovements.filter(s => s.change > PERFORMANCE_CHANGE_THRESHOLD).length}
                   </div>
                   <div className="text-xs md:text-sm text-green-700">Improved</div>
                 </div>
                 <div className="p-2 md:p-3 bg-gray-100 dark:bg-gray-800 rounded-lg">
                   <div className="text-lg md:text-xl font-bold text-gray-600">
-                    {studentImprovements.filter(s => Math.abs(s.change) <= 5).length}
+                    {studentImprovements.filter(s => Math.abs(s.change) <= PERFORMANCE_CHANGE_THRESHOLD).length}
                   </div>
                   <div className="text-xs md:text-sm text-gray-600">Stable</div>
                 </div>
                 <div className="p-2 md:p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
                   <div className="text-lg md:text-xl font-bold text-red-600">
-                    {studentImprovements.filter(s => s.change < -5).length}
+                    {studentImprovements.filter(s => s.change < -PERFORMANCE_CHANGE_THRESHOLD).length}
                   </div>
                   <div className="text-xs md:text-sm text-red-700">Declined</div>
                 </div>

@@ -2,8 +2,9 @@
 
 import React, { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { DEFAULT_PASSING_THRESHOLD, PERFORMANCE_CHANGE_THRESHOLD, AT_RISK_HIGH_SEVERITY_MARGIN } from '../utils/constants';
 
-const AtRiskAlerts = ({ results, studentHistory = [], threshold = 60 }) => {
+const AtRiskAlerts = ({ results, studentHistory = [], threshold = DEFAULT_PASSING_THRESHOLD }) => {
   const alerts = useMemo(() => {
     if (!results || results.length === 0) return { atRisk: [], declining: [], improved: [] };
 
@@ -23,7 +24,7 @@ const AtRiskAlerts = ({ results, studentHistory = [], threshold = 60 }) => {
         atRisk.push({
           ...result,
           percentage,
-          severity: percentage < threshold - 20 ? 'high' : 'medium'
+          severity: percentage < threshold - AT_RISK_HIGH_SEVERITY_MARGIN ? 'high' : 'medium'
         });
       }
 
@@ -44,7 +45,7 @@ const AtRiskAlerts = ({ results, studentHistory = [], threshold = 60 }) => {
           );
           const totalDrop = recentScores[0] - recentScores[recentScores.length - 1];
 
-          if (isDecline && totalDrop > 10) {
+          if (isDecline && totalDrop > PERFORMANCE_CHANGE_THRESHOLD) {
             declining.push({
               ...result,
               previousScore: recentScores[0],
@@ -59,7 +60,7 @@ const AtRiskAlerts = ({ results, studentHistory = [], threshold = 60 }) => {
           );
           const totalGain = recentScores[recentScores.length - 1] - recentScores[0];
 
-          if (isImproving && totalGain > 10) {
+          if (isImproving && totalGain > PERFORMANCE_CHANGE_THRESHOLD) {
             improved.push({
               ...result,
               previousScore: recentScores[0],

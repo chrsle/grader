@@ -1,10 +1,12 @@
+import { MAX_FILE_SIZE, MAX_FILE_SIZE_LABEL, VALID_IMAGE_TYPES } from './constants';
+
 export const validateImage = (file) => {
-  const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
-  if (!validTypes.includes(file.type)) {
-    throw new Error('Invalid file type. Please upload a JPEG, PNG, or GIF image.');
+  if (!VALID_IMAGE_TYPES.includes(file.type)) {
+    const supported = VALID_IMAGE_TYPES.map(t => t.replace('image/', '')).join(', ');
+    throw new Error(`Invalid file type "${file.type}". Supported types: ${supported}`);
   }
-  if (file.size > 5 * 1024 * 1024) { // 5MB limit
-    throw new Error('File size too large. Please upload an image smaller than 5MB.');
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`File size too large. Please upload an image smaller than ${MAX_FILE_SIZE_LABEL}.`);
   }
 };
 

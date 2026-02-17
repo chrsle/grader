@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { validateApiKey, unauthorizedResponse } from '../../../utils/auth';
 import { rateLimit, rateLimitResponse, getClientIdentifier } from '../../../utils/rateLimit';
+import { OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_GRADING_TEMPERATURE, MAX_INPUT_LENGTH } from '../../../utils/constants';
 
 // Lazy initialization of OpenAI client to avoid crashes when env var is missing
 let openai = null;
@@ -15,9 +16,6 @@ function getOpenAIClient() {
   }
   return openai;
 }
-
-// Maximum allowed input length to prevent abuse
-const MAX_INPUT_LENGTH = 10000;
 
 // Sanitize input to prevent prompt injection
 function sanitizeInput(text) {
@@ -115,7 +113,7 @@ Important:
 - Return ONLY the JSON array, no other text`;
 
     const response = await getOpenAIClient().chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: OPENAI_MODEL,
       messages: [
         {
           role: 'system',
@@ -126,8 +124,8 @@ Important:
           content: prompt
         }
       ],
-      max_tokens: 2000,
-      temperature: 0.1,
+      max_tokens: OPENAI_MAX_TOKENS,
+      temperature: OPENAI_GRADING_TEMPERATURE,
     });
 
     const content = response.choices[0].message.content.trim();

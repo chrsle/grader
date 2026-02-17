@@ -3,6 +3,7 @@
 import React, { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { calculateStudentTopicMastery } from '../utils/topicUtils';
+import { getLetterGrade, GRADE_BOUNDARIES, GRADE_COLORS, MASTERY_THRESHOLD, DEVELOPING_THRESHOLD } from '../utils/constants';
 
 const StudentProfile = ({ student, testResults = [], onClose }) => {
   const analytics = useMemo(() => {
@@ -42,8 +43,8 @@ const StudentProfile = ({ student, testResults = [], onClose }) => {
     const topicMastery = calculateStudentTopicMastery(testResults);
 
     // Strengths and weaknesses
-    const strengths = topicMastery.filter(t => t.masteryPercentage >= 80).slice(0, 3);
-    const weaknesses = topicMastery.filter(t => t.masteryPercentage < 60).slice(0, 3);
+    const strengths = topicMastery.filter(t => t.masteryPercentage >= MASTERY_THRESHOLD).slice(0, 3);
+    const weaknesses = topicMastery.filter(t => t.masteryPercentage < DEVELOPING_THRESHOLD).slice(0, 3);
 
     return {
       scores,
@@ -150,8 +151,8 @@ const StudentProfile = ({ student, testResults = [], onClose }) => {
                     <div className="flex-1 bg-gray-200 rounded-full h-3">
                       <div
                         className={`h-3 rounded-full ${
-                          score.percentage >= 80 ? 'bg-green-500' :
-                          score.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                          score.percentage >= GRADE_BOUNDARIES.B ? 'bg-green-500' :
+                          score.percentage >= GRADE_BOUNDARIES.D ? 'bg-yellow-500' : 'bg-red-500'
                         }`}
                         style={{ width: `${score.percentage}%` }}
                       />
@@ -176,8 +177,8 @@ const StudentProfile = ({ student, testResults = [], onClose }) => {
                 <div
                   key={idx}
                   className={`flex-1 rounded-t ${
-                    score.percentage >= 80 ? 'bg-green-500' :
-                    score.percentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                    score.percentage >= GRADE_BOUNDARIES.B ? 'bg-green-500' :
+                    score.percentage >= GRADE_BOUNDARIES.D ? 'bg-yellow-500' : 'bg-red-500'
                   }`}
                   style={{ height: `${score.percentage}%` }}
                   title={`${score.percentage.toFixed(0)}%`}
@@ -256,8 +257,8 @@ const StudentProfile = ({ student, testResults = [], onClose }) => {
                 <div className="w-full bg-gray-200 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full ${
-                      topic.masteryPercentage >= 80 ? 'bg-green-500' :
-                      topic.masteryPercentage >= 60 ? 'bg-yellow-500' : 'bg-red-500'
+                      topic.masteryPercentage >= MASTERY_THRESHOLD ? 'bg-green-500' :
+                      topic.masteryPercentage >= DEVELOPING_THRESHOLD ? 'bg-yellow-500' : 'bg-red-500'
                     }`}
                     style={{ width: `${topic.masteryPercentage}%` }}
                   />
@@ -278,23 +279,12 @@ const StatBox = ({ label, value, grade }) => (
     <div className="text-2xl font-bold">{value}</div>
     {grade && (
       <div className={`text-lg font-semibold ${
-        grade === 'A' ? 'text-green-600' :
-        grade === 'B' ? 'text-blue-600' :
-        grade === 'C' ? 'text-yellow-600' :
-        grade === 'D' ? 'text-orange-600' : 'text-red-600'
+        { A: 'text-green-600', B: 'text-blue-600', C: 'text-yellow-600', D: 'text-orange-600', F: 'text-red-600' }[grade] || 'text-gray-600'
       }`}>
         {grade}
       </div>
     )}
   </div>
 );
-
-const getLetterGrade = (percentage) => {
-  if (percentage >= 90) return 'A';
-  if (percentage >= 80) return 'B';
-  if (percentage >= 70) return 'C';
-  if (percentage >= 60) return 'D';
-  return 'F';
-};
 
 export default StudentProfile;

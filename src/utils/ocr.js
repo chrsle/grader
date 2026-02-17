@@ -28,7 +28,8 @@ export const parseQuestions = (text) => {
   const lines = text.split('\n');
   let currentQuestion = null;
 
-  const questionRegex = /^(\d+[\.\)])\s*(.*)/;
+  // Supports: "1.", "1)", "Q1.", "Q1)", "Q1:", "Question 1:", "Problem 1:", "#1."
+  const questionRegex = /^(?:Q(?:uestion)?\s*|Problem\s*|#)?(\d+)[\.\)\:]\s*(.*)/i;
 
   for (const line of lines) {
     const trimmedLine = line.trim();
@@ -40,7 +41,7 @@ export const parseQuestions = (text) => {
         questions.push(currentQuestion);
       }
       currentQuestion = {
-        number: match[1].replace(/[\.\)]$/, ''),  // Remove the period or parenthesis
+        number: match[1],
         text: match[2],
         answer: ''
       };
