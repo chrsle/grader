@@ -8,6 +8,7 @@ import { uploadImage, saveResult, saveKeyText, getKeys, deleteKey } from '../uti
 import { validateImages } from '../utils/inputValidation';
 import { processImagesInParallel } from '../utils/imageProcessing';
 import { calculateTopicMastery, getRecommendedReviewTopics } from '../utils/topicUtils';
+import { getLetterGrade, getGradeDistribution, GRADE_BOUNDARIES } from '../utils/constants';
 
 // Components
 import KeyQuestions from '../components/KeyQuestions';
@@ -89,13 +90,7 @@ export default function Home() {
       ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
       : sorted[Math.floor(sorted.length / 2)];
 
-    const distribution = {
-      'A (90-100%)': percentages.filter(p => p >= 90).length,
-      'B (80-89%)': percentages.filter(p => p >= 80 && p < 90).length,
-      'C (70-79%)': percentages.filter(p => p >= 70 && p < 80).length,
-      'D (60-69%)': percentages.filter(p => p >= 60 && p < 70).length,
-      'F (0-59%)': percentages.filter(p => p < 60).length,
-    };
+    const distribution = getGradeDistribution(percentages);
 
     const questionStats = {};
     results.forEach(result => {
@@ -136,7 +131,7 @@ export default function Home() {
     return {
       studentScores,
       overall: { average, median, highest: Math.max(...percentages), lowest: Math.min(...percentages),
-        passRate: (percentages.filter(p => p >= 60).length / percentages.length) * 100,
+        passRate: (percentages.filter(p => p >= GRADE_BOUNDARIES.D).length / percentages.length) * 100,
         perfectScores: percentages.filter(p => p === 100).length, stdDev, totalStudents: results.length },
       distribution, questionAnalysis, commonMistakes
     };
@@ -283,12 +278,13 @@ export default function Home() {
         }
 
         const data = await response.json();
+        const testType = rubric?.name || 'Math Test';
         const imagePath = await uploadImage(studentImages[i], `student_${i+1}_${Date.now()}.png`);
-        const savedResult = await saveResult('Math Test', studentName, imagePath,
+        const savedResult = await saveResult(testType, studentName, imagePath,
           JSON.stringify(parseQuestions(studentText)), data.result);
 
         newResults.push({
-          studentNumber: i + 1, testType: 'Math Test', studentName,
+          studentNumber: i + 1, testType, studentName,
           verificationResult: data.result, savedResult, email: rosterStudent?.email
         });
       }
@@ -593,7 +589,7 @@ export default function Home() {
                         <div key={i} className="p-4 border rounded-lg">
                           <div className="flex justify-between items-center mb-2">
                             <h3 className="font-semibold">{r.studentName}</h3>
-                            <span className={`text-xl font-bold ${pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            <span className={`text-xl font-bold ${pct >= GRADE_BOUNDARIES.B ? 'text-green-600' : pct >= GRADE_BOUNDARIES.D ? 'text-yellow-600' : 'text-red-600'}`}>
                               {pct.toFixed(0)}%
                             </span>
                           </div>

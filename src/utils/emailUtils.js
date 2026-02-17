@@ -1,4 +1,5 @@
 // Email utilities for sending grade notifications
+import { getLetterGrade, GRADE_BOUNDARIES } from './constants';
 
 /**
  * Generate email content for a student
@@ -63,7 +64,7 @@ Dear Parent/Guardian,
 
 This is to inform you about ${studentName}'s recent academic performance.
 
-Recent Assessment: ${latestResult?.testType || 'Math Test'}
+Recent Assessment: ${latestResult?.testType || 'Assessment'}
 Score: ${correct}/${total} (${percentage}%)
 Grade: ${grade}
 
@@ -73,10 +74,10 @@ How ${studentName} compares to the class:
 - ${studentName}'s Score: ${percentage}%
 ` : ''}
 
-${parseFloat(percentage) < 60 ? `
+${parseFloat(percentage) < GRADE_BOUNDARIES.D ? `
 We noticed that ${studentName} may need additional support in this subject.
 Please consider scheduling a meeting to discuss strategies for improvement.
-` : parseFloat(percentage) >= 90 ? `
+` : parseFloat(percentage) >= GRADE_BOUNDARIES.A ? `
 Congratulations! ${studentName} is performing excellently in this subject.
 ` : ''}
 
@@ -108,16 +109,6 @@ export const generateBulkEmailContent = (results, studentEmails = {}) => {
   });
 
   return emails;
-};
-
-// Helper functions
-const getLetterGrade = (percentage) => {
-  const p = parseFloat(percentage);
-  if (p >= 90) return 'A';
-  if (p >= 80) return 'B';
-  if (p >= 70) return 'C';
-  if (p >= 60) return 'D';
-  return 'F';
 };
 
 const calculatePercentile = (studentPercentage, studentScores) => {

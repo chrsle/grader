@@ -2,8 +2,9 @@
 
 import React, { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { DEFAULT_PASSING_THRESHOLD } from '../utils/constants';
 
-const AtRiskAlerts = ({ results, studentHistory = [], threshold = 60 }) => {
+const AtRiskAlerts = ({ results, studentHistory = [], threshold = DEFAULT_PASSING_THRESHOLD }) => {
   const alerts = useMemo(() => {
     if (!results || results.length === 0) return { atRisk: [], declining: [], improved: [] };
 

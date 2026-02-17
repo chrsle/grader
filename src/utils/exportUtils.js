@@ -1,4 +1,18 @@
 // Export utilities for CSV, PDF, and other formats
+import { getLetterGrade } from './constants';
+
+/**
+ * HTML-escape a string to prevent XSS in generated HTML reports.
+ */
+function escapeHtml(str) {
+  if (typeof str !== 'string') return String(str ?? '');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 /**
  * Export results to CSV format
@@ -50,7 +64,7 @@ export const exportToCSV = (results, filename = 'grades.csv') => {
 
   const csvContent = [
     headers.join(','),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+    ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
   ].join('\n');
 
   downloadFile(csvContent, filename, 'text/csv');
@@ -135,16 +149,18 @@ export const exportAnalyticsSummary = (analytics, filename = 'class_analytics.cs
 };
 
 /**
- * Generate PDF report (returns HTML for printing)
+ * Generate PDF report (returns HTML for printing).
+ * All user-supplied data is HTML-escaped to prevent XSS.
  */
 export const generatePDFReport = (results, analytics, className = 'Math Class') => {
   const date = new Date().toLocaleDateString();
+  const safeClassName = escapeHtml(className);
 
   const html = `
     <!DOCTYPE html>
     <html>
     <head>
-      <title>Grade Report - ${className}</title>
+      <title>Grade Report - ${safeClassName}</title>
       <style>
         body { font-family: Arial, sans-serif; margin: 40px; }
         h1 { color: #333; border-bottom: 2px solid #333; padding-bottom: 10px; }
@@ -168,8 +184,8 @@ export const generatePDFReport = (results, analytics, className = 'Math Class') 
       </style>
     </head>
     <body>
-      <h1>Grade Report: ${className}</h1>
-      <p>Generated on ${date}</p>
+      <h1>Grade Report: ${safeClassName}</h1>
+      <p>Generated on ${escapeHtml(date)}</p>
 
       <h2>Class Summary</h2>
       <div class="stat-box">
@@ -194,7 +210,7 @@ export const generatePDFReport = (results, analytics, className = 'Math Class') 
         <tr><th>Grade</th><th>Count</th><th>Percentage</th></tr>
         ${Object.entries(analytics.distribution).map(([grade, count]) => `
           <tr>
-            <td>${grade}</td>
+            <td>${escapeHtml(grade)}</td>
             <td>${count}</td>
             <td>${((count / analytics.overall.totalStudents) * 100).toFixed(1)}%</td>
           </tr>
@@ -211,7 +227,7 @@ export const generatePDFReport = (results, analytics, className = 'Math Class') 
             return `
               <tr>
                 <td>${idx + 1}</td>
-                <td>${student.studentName}</td>
+                <td>${escapeHtml(student.studentName)}</td>
                 <td>${student.score}/${student.total}</td>
                 <td>${student.percentage.toFixed(0)}%</td>
                 <td class="grade-${grade}">${grade}</td>
@@ -227,7 +243,7 @@ export const generatePDFReport = (results, analytics, className = 'Math Class') 
         <tr><th>Question</th><th>Success Rate</th><th>Correct</th><th>Total</th></tr>
         ${analytics.questionAnalysis.map(q => `
           <tr>
-            <td>Q${q.questionNumber}: ${q.text.substring(0, 50)}...</td>
+            <td>Q${escapeHtml(String(q.questionNumber))}: ${escapeHtml((q.text || '').substring(0, 50))}...</td>
             <td>${q.successRate.toFixed(0)}%</td>
             <td>${q.correctCount}</td>
             <td>${q.totalCount}</td>
@@ -238,9 +254,9 @@ export const generatePDFReport = (results, analytics, className = 'Math Class') 
       <h2>Areas Needing Review</h2>
       ${analytics.commonMistakes.map(q => `
         <div style="margin: 10px 0; padding: 10px; background: #fef2f2; border-left: 4px solid #ef4444;">
-          <strong>Question ${q.questionNumber}</strong> (${q.missedCount} students missed)<br>
-          ${q.text}<br>
-          <span style="color: green;">Correct: ${q.correctAnswer}</span>
+          <strong>Question ${escapeHtml(String(q.questionNumber))}</strong> (${q.missedCount} students missed)<br>
+          ${escapeHtml(q.text)}<br>
+          <span style="color: green;">Correct: ${escapeHtml(String(q.correctAnswer))}</span>
         </div>
       `).join('')}
 
@@ -260,8 +276,10 @@ export const generatePDFReport = (results, analytics, className = 'Math Class') 
 export const openPDFReport = (results, analytics, className) => {
   const html = generatePDFReport(results, analytics, className);
   const printWindow = window.open('', '_blank');
-  printWindow.document.write(html);
-  printWindow.document.close();
+  if (printWindow) {
+    printWindow.document.write(html);
+    printWindow.document.close();
+  }
 };
 
 /**
@@ -284,16 +302,6 @@ export const exportForGoogleSheets = (results, filename = 'grades_for_sheets.tsv
 
   const tsvContent = [headers.join('\t'), ...rows.map(row => row.join('\t'))].join('\n');
   downloadFile(tsvContent, filename, 'text/tab-separated-values');
-};
-
-// Helper functions
-const getLetterGrade = (percentage) => {
-  const p = parseFloat(percentage);
-  if (p >= 90) return 'A';
-  if (p >= 80) return 'B';
-  if (p >= 70) return 'C';
-  if (p >= 60) return 'D';
-  return 'F';
 };
 
 const downloadFile = (content, filename, mimeType) => {

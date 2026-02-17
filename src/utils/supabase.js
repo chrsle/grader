@@ -1,26 +1,37 @@
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_STORAGE_BUCKET } from './constants';
 
 // Client-side Supabase client (uses public anon key)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_KEY;
+// Lazy initialization to avoid crashes when env vars are missing during build/SSR
+let supabase = null;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing required Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_KEY');
+function getSupabaseClient() {
+  if (!supabase) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error('Missing required Supabase environment variables: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_KEY');
+    }
+
+    // SECURITY: Use anon key for client-side operations
+    // Service role key should only be used in server-side API routes
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+  }
+  return supabase;
 }
 
-// SECURITY: Use anon key for client-side operations
-// Service role key should only be used in server-side API routes
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
 export const uploadImage = async (file, fileName) => {
-  const { data, error } = await supabase.storage
-    .from('student_tests')
+  const client = getSupabaseClient();
+
+  const { data, error } = await client.storage
+    .from(SUPABASE_STORAGE_BUCKET)
     .upload(fileName, file);
 
   if (error) throw error;
 
-  const { data: publicURLData, error: publicURLError } = supabase.storage
-    .from('student_tests')
+  const { data: publicURLData, error: publicURLError } = client.storage
+    .from(SUPABASE_STORAGE_BUCKET)
     .getPublicUrl(fileName);
 
   if (publicURLError) throw publicURLError;
@@ -29,7 +40,7 @@ export const uploadImage = async (file, fileName) => {
 };
 
 export const saveResult = async (testType, studentName, imagePath, studentAnswers, verificationResult) => {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('test_results')
     .insert({
       test_type: testType,
@@ -46,7 +57,7 @@ export const saveResult = async (testType, studentName, imagePath, studentAnswer
 };
 
 export const saveKeyText = async (keyText) => {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('answer_keys')
     .insert({ extracted_text: keyText })
     .select()
@@ -57,7 +68,7 @@ export const saveKeyText = async (keyText) => {
 };
 
 export const getKeys = async () => {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('answer_keys')
     .select('*')
     .order('created_at', { ascending: false })
@@ -68,7 +79,7 @@ export const getKeys = async () => {
 };
 
 export const deleteKey = async (keyId) => {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('answer_keys')
     .delete()
     .eq('id', keyId)

@@ -1,12 +1,27 @@
-// Simple API authentication middleware
-// In production, consider using a more robust auth solution like NextAuth.js or Supabase Auth
+// API authentication middleware
+import { timingSafeEqual } from 'crypto';
 
 const API_KEY = process.env.API_SECRET_KEY;
 
+/**
+ * Perform a timing-safe string comparison to prevent timing attacks.
+ */
+function safeCompare(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  if (a.length !== b.length) return false;
+  try {
+    return timingSafeEqual(Buffer.from(a), Buffer.from(b));
+  } catch {
+    return false;
+  }
+}
+
 export function validateApiKey(request) {
-  // If no API key is configured, skip validation (development mode)
+  // If no API key is configured, skip validation (development mode only)
   if (!API_KEY) {
-    console.warn('WARNING: No API_SECRET_KEY configured. API routes are unprotected.');
+    if (process.env.NODE_ENV === 'production') {
+      return { valid: false, error: 'Server authentication is not configured' };
+    }
     return { valid: true };
   }
 
@@ -18,7 +33,7 @@ export function validateApiKey(request) {
 
   const [type, token] = authHeader.split(' ');
 
-  if (type !== 'Bearer' || token !== API_KEY) {
+  if (type !== 'Bearer' || !safeCompare(token, API_KEY)) {
     return { valid: false, error: 'Invalid API key' };
   }
 
