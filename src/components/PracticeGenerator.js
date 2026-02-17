@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { getApiHeaders, API_FETCH_TIMEOUT_MS } from '../utils/constants';
+import { getApiHeaders, API_FETCH_TIMEOUT_MS, API_ENDPOINTS, MAX_MISSED_QUESTIONS_FOR_AI } from '../utils/constants';
 
 const PracticeGenerator = ({ weakTopics = [], results = [] }) => {
   const [generatedProblems, setGeneratedProblems] = useState([]);
@@ -28,14 +28,14 @@ const PracticeGenerator = ({ weakTopics = [], results = [] }) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), API_FETCH_TIMEOUT_MS);
 
-      const response = await fetch('/api/generate-practice', {
+      const response = await fetch(API_ENDPOINTS.GENERATE_PRACTICE, {
         method: 'POST',
         headers: getApiHeaders(),
         body: JSON.stringify({
           topic: selectedTopic,
           difficulty,
           count,
-          missedQuestions: missedQuestions.slice(0, 5)
+          missedQuestions: missedQuestions.slice(0, MAX_MISSED_QUESTIONS_FOR_AI)
         }),
         signal: controller.signal,
       });

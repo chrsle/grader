@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { validateApiKey, unauthorizedResponse } from '../../../utils/auth';
 import { rateLimit, rateLimitResponse, getClientIdentifier } from '../../../utils/rateLimit';
-import { OPENAI_MODEL, OPENAI_MAX_TOKENS, MAX_INPUT_LENGTH } from '../../../utils/constants';
+import { OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_GENERATION_TEMPERATURE, MAX_INPUT_LENGTH, PRACTICE_PROBLEM_MIN, PRACTICE_PROBLEM_MAX, PRACTICE_PROBLEM_DEFAULT, MAX_MISSED_QUESTIONS_FOR_AI } from '../../../utils/constants';
 
 // Lazy initialization of OpenAI client to avoid crashes when env var is missing
 let openai = null;
@@ -56,12 +56,12 @@ export async function POST(req) {
     }
 
     const sanitizedTopic = sanitizeInput(topic);
-    const safeCount = Math.min(Math.max(parseInt(count, 10) || 5, 1), 20);
+    const safeCount = Math.min(Math.max(parseInt(count, 10) || PRACTICE_PROBLEM_DEFAULT, PRACTICE_PROBLEM_MIN), PRACTICE_PROBLEM_MAX);
     const safeDifficulty = ['easy', 'medium', 'hard'].includes(difficulty) ? difficulty : 'medium';
 
     // Sanitize missed questions if provided
     const safeMissedQuestions = Array.isArray(missedQuestions)
-      ? missedQuestions.slice(0, 5).map(q => ({
+      ? missedQuestions.slice(0, MAX_MISSED_QUESTIONS_FOR_AI).map(q => ({
           text: sanitizeInput(String(q.text || '')).slice(0, 500),
           correctAnswer: sanitizeInput(String(q.correctAnswer || '')).slice(0, 200),
         }))
@@ -105,7 +105,7 @@ Guidelines:
         { role: 'user', content: prompt }
       ],
       max_tokens: OPENAI_MAX_TOKENS,
-      temperature: 0.7,
+      temperature: OPENAI_GENERATION_TEMPERATURE,
     });
 
     const content = response.choices[0].message.content.trim();

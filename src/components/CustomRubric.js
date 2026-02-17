@@ -5,16 +5,10 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { DEFAULT_RUBRIC, MAX_QUESTION_WEIGHT_COUNT } from '../utils/constants';
 
 const CustomRubric = ({ rubric, onRubricChange, onSave }) => {
-  const [localRubric, setLocalRubric] = useState(rubric || {
-    name: '',
-    passingScore: 60,
-    allowPartialCredit: true,
-    partialCreditPercentage: 50,
-    categories: [],
-    questionWeights: {}
-  });
+  const [localRubric, setLocalRubric] = useState(rubric || { ...DEFAULT_RUBRIC });
 
   const [newCategory, setNewCategory] = useState({ name: '', weight: 100, description: '' });
 
@@ -217,7 +211,7 @@ const CustomRubric = ({ rubric, onRubricChange, onSave }) => {
           </p>
 
           <div className="grid grid-cols-5 gap-2">
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((qNum) => (
+            {Array.from({ length: MAX_QUESTION_WEIGHT_COUNT }, (_, i) => i + 1).map((qNum) => (
               <div key={qNum} className="flex flex-col">
                 <label className="text-xs text-gray-500 text-center">Q{qNum}</label>
                 <Input
@@ -234,14 +228,7 @@ const CustomRubric = ({ rubric, onRubricChange, onSave }) => {
 
         {/* Save Button */}
         <div className="flex justify-end gap-2">
-          <Button variant="outline" onClick={() => setLocalRubric({
-            name: '',
-            passingScore: 60,
-            allowPartialCredit: true,
-            partialCreditPercentage: 50,
-            categories: [],
-            questionWeights: {}
-          })}>
+          <Button variant="outline" onClick={() => setLocalRubric({ ...DEFAULT_RUBRIC })}>
             Reset
           </Button>
           <Button onClick={() => onSave?.(localRubric)}>

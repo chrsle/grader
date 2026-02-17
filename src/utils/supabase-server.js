@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { DB_TABLES } from './constants';
 
 // SECURITY: This client uses the service role key and should ONLY be used
 // in server-side API routes, never in client-side code
@@ -21,7 +22,7 @@ function getSupabaseAdmin() {
 
 export const saveGradingCriteria = async (testType, criteria) => {
   const { data, error } = await getSupabaseAdmin()
-    .from('grading_criteria')
+    .from(DB_TABLES.GRADING_CRITERIA)
     .upsert({ test_type: testType, criteria }, { onConflict: 'test_type' });
 
   if (error) throw error;
@@ -30,7 +31,7 @@ export const saveGradingCriteria = async (testType, criteria) => {
 
 export const getGradingCriteria = async (testType) => {
   const { data, error } = await getSupabaseAdmin()
-    .from('grading_criteria')
+    .from(DB_TABLES.GRADING_CRITERIA)
     .select('criteria')
     .eq('test_type', testType)
     .maybeSingle();

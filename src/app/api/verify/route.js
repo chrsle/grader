@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { validateApiKey, unauthorizedResponse } from '../../../utils/auth';
 import { rateLimit, rateLimitResponse, getClientIdentifier } from '../../../utils/rateLimit';
-import { OPENAI_MODEL, OPENAI_MAX_TOKENS, MAX_INPUT_LENGTH } from '../../../utils/constants';
+import { OPENAI_MODEL, OPENAI_MAX_TOKENS, OPENAI_GRADING_TEMPERATURE, MAX_INPUT_LENGTH } from '../../../utils/constants';
 
 // Lazy initialization of OpenAI client to avoid crashes when env var is missing
 let openai = null;
@@ -125,7 +125,7 @@ Important:
         }
       ],
       max_tokens: OPENAI_MAX_TOKENS,
-      temperature: 0.1,
+      temperature: OPENAI_GRADING_TEMPERATURE,
     });
 
     const content = response.choices[0].message.content.trim();

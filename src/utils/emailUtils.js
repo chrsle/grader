@@ -1,5 +1,5 @@
 // Email utilities for sending grade notifications
-import { getLetterGrade, GRADE_BOUNDARIES } from './constants';
+import { getLetterGrade, GRADE_BOUNDARIES, DEFAULT_PASSING_THRESHOLD } from './constants';
 
 /**
  * Generate email content for a student
@@ -74,7 +74,7 @@ How ${studentName} compares to the class:
 - ${studentName}'s Score: ${percentage}%
 ` : ''}
 
-${parseFloat(percentage) < GRADE_BOUNDARIES.D ? `
+${parseFloat(percentage) < DEFAULT_PASSING_THRESHOLD ? `
 We noticed that ${studentName} may need additional support in this subject.
 Please consider scheduling a meeting to discuss strategies for improvement.
 ` : parseFloat(percentage) >= GRADE_BOUNDARIES.A ? `

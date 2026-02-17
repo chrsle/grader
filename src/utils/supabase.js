@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_STORAGE_BUCKET } from './constants';
+import { SUPABASE_STORAGE_BUCKET, DB_TABLES } from './constants';
 
 // Client-side Supabase client (uses public anon key)
 // Lazy initialization to avoid crashes when env vars are missing during build/SSR
@@ -41,7 +41,7 @@ export const uploadImage = async (file, fileName) => {
 
 export const saveResult = async (testType, studentName, imagePath, studentAnswers, verificationResult) => {
   const { data, error } = await getSupabaseClient()
-    .from('test_results')
+    .from(DB_TABLES.TEST_RESULTS)
     .insert({
       test_type: testType,
       student_name: studentName,
@@ -58,7 +58,7 @@ export const saveResult = async (testType, studentName, imagePath, studentAnswer
 
 export const saveKeyText = async (keyText) => {
   const { data, error } = await getSupabaseClient()
-    .from('answer_keys')
+    .from(DB_TABLES.ANSWER_KEYS)
     .insert({ extracted_text: keyText })
     .select()
     .single();
@@ -69,7 +69,7 @@ export const saveKeyText = async (keyText) => {
 
 export const getKeys = async () => {
   const { data, error } = await getSupabaseClient()
-    .from('answer_keys')
+    .from(DB_TABLES.ANSWER_KEYS)
     .select('*')
     .order('created_at', { ascending: false })
     .limit(50);
@@ -80,7 +80,7 @@ export const getKeys = async () => {
 
 export const deleteKey = async (keyId) => {
   const { data, error } = await getSupabaseClient()
-    .from('answer_keys')
+    .from(DB_TABLES.ANSWER_KEYS)
     .delete()
     .eq('id', keyId)
     .select()

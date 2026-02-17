@@ -37,7 +37,8 @@ export function getGradeDistribution(percentages) {
   };
 }
 
-// Grade color CSS classes keyed by letter grade
+// --- Grade Colors (single source of truth) ---
+// CSS classes for grade badges/labels
 export const GRADE_COLORS = {
   A: 'bg-green-100 text-green-800',
   B: 'bg-blue-100 text-blue-800',
@@ -46,13 +47,22 @@ export const GRADE_COLORS = {
   F: 'bg-red-100 text-red-800',
 };
 
-// Distribution bar colors keyed by distribution label prefix
+// Distribution bar colors keyed by letter grade
 export const DISTRIBUTION_BAR_COLORS = {
   A: 'bg-green-500',
   B: 'bg-blue-500',
   C: 'bg-yellow-500',
   D: 'bg-orange-500',
   F: 'bg-red-500',
+};
+
+// Hex colors for PDF/HTML reports (must stay in sync with Tailwind classes above)
+export const GRADE_HEX_COLORS = {
+  A: '#22c55e',
+  B: '#3b82f6',
+  C: '#eab308',
+  D: '#f97316',
+  F: '#ef4444',
 };
 
 // --- File Upload ---
@@ -73,6 +83,8 @@ export const VALID_IMAGE_TYPES = [
 // --- OpenAI ---
 export const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 export const OPENAI_MAX_TOKENS = parseInt(process.env.OPENAI_MAX_TOKENS, 10) || 2000;
+export const OPENAI_GRADING_TEMPERATURE = parseFloat(process.env.OPENAI_GRADING_TEMPERATURE) || 0.1;
+export const OPENAI_GENERATION_TEMPERATURE = parseFloat(process.env.OPENAI_GENERATION_TEMPERATURE) || 0.7;
 
 // --- Rate Limiting ---
 export const RATE_LIMIT_WINDOW_MS = parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60 * 1000;
@@ -84,6 +96,13 @@ export const MAX_INPUT_LENGTH = parseInt(process.env.MAX_INPUT_LENGTH, 10) || 10
 // --- Supabase Storage ---
 export const SUPABASE_STORAGE_BUCKET = process.env.NEXT_PUBLIC_SUPABASE_BUCKET || 'student_tests';
 
+// --- Supabase Table Names (centralized to avoid scattering across files) ---
+export const DB_TABLES = {
+  TEST_RESULTS: 'test_results',
+  ANSWER_KEYS: 'answer_keys',
+  GRADING_CRITERIA: 'grading_criteria',
+};
+
 // --- Passing threshold ---
 export const DEFAULT_PASSING_THRESHOLD = 60;
 
@@ -91,6 +110,57 @@ export const DEFAULT_PASSING_THRESHOLD = 60;
 export const MASTERY_THRESHOLD = 80;     // >= this is "mastered"
 export const DEVELOPING_THRESHOLD = 60;  // >= this is "developing", below is "needs review"
 export const REVIEW_THRESHOLD = 70;      // topics below this are recommended for review
+
+// --- Performance Change Detection ---
+// Unified threshold for detecting meaningful score changes across the app.
+// Used by AtRiskAlerts (decline/improvement) and ComparativeAnalysis (categorization).
+export const PERFORMANCE_CHANGE_THRESHOLD = parseInt(process.env.NEXT_PUBLIC_PERFORMANCE_CHANGE_THRESHOLD, 10) || 10;
+
+// --- At-Risk Severity ---
+// Points below passing threshold to be classified as "high" severity
+export const AT_RISK_HIGH_SEVERITY_MARGIN = parseInt(process.env.NEXT_PUBLIC_AT_RISK_SEVERITY_MARGIN, 10) || 20;
+
+// --- Display Limits ---
+export const COMMON_MISTAKES_DISPLAY_LIMIT = 3;
+export const MAX_REVIEW_TOPICS_DISPLAY = 5;
+export const MAX_MISSED_QUESTIONS_FOR_AI = 5;
+
+// --- Practice Problem Generation ---
+export const PRACTICE_PROBLEM_MIN = 1;
+export const PRACTICE_PROBLEM_MAX = 20;
+export const PRACTICE_PROBLEM_DEFAULT = 5;
+
+// --- Mobile Breakpoint ---
+export const MOBILE_BREAKPOINT_PX = 768;
+
+// --- Default Test Type ---
+export const DEFAULT_TEST_TYPE = 'Test';
+
+// --- Default Rubric Values ---
+export const DEFAULT_RUBRIC = {
+  name: '',
+  passingScore: DEFAULT_PASSING_THRESHOLD,
+  allowPartialCredit: true,
+  partialCreditPercentage: 50,
+  categories: [],
+  questionWeights: {},
+};
+
+// --- LocalStorage Keys (namespaced for multi-tenant support) ---
+const STORAGE_NAMESPACE = process.env.NEXT_PUBLIC_STORAGE_NAMESPACE || 'grader';
+export const STORAGE_KEYS = {
+  STUDENTS: `${STORAGE_NAMESPACE}_students`,
+  TEMPLATES: `${STORAGE_NAMESPACE}_templates`,
+  RUBRIC: `${STORAGE_NAMESPACE}_rubric`,
+  PREV_RESULTS: `${STORAGE_NAMESPACE}_prev_results`,
+};
+
+// --- API Endpoints (centralized) ---
+export const API_ENDPOINTS = {
+  VERIFY: '/api/verify',
+  GENERATE_PRACTICE: '/api/generate-practice',
+  GRADING_CRITERIA: '/api/grading-criteria',
+};
 
 // --- API fetch timeout (ms) ---
 export const API_FETCH_TIMEOUT_MS = parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT_MS, 10) || 30000;
@@ -109,3 +179,7 @@ export function getApiHeaders() {
   }
   return headers;
 }
+
+// --- Question Number Configuration ---
+// Maximum number of questions supported in question weight configuration
+export const MAX_QUESTION_WEIGHT_COUNT = parseInt(process.env.NEXT_PUBLIC_MAX_QUESTIONS, 10) || 50;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getApiHeaders, API_FETCH_TIMEOUT_MS } from '../utils/constants';
+import { getApiHeaders, API_FETCH_TIMEOUT_MS, API_ENDPOINTS } from '../utils/constants';
 
 const GradingCriteriaForm = ({ testType, onSave, questions = [] }) => {
   const [criteria, setCriteria] = useState([]);
@@ -52,7 +52,7 @@ const GradingCriteriaForm = ({ testType, onSave, questions = [] }) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), API_FETCH_TIMEOUT_MS);
 
-      const response = await fetch('/api/grading-criteria', {
+      const response = await fetch(API_ENDPOINTS.GRADING_CRITERIA, {
         method: 'POST',
         headers: getApiHeaders(),
         body: JSON.stringify({ testType, criteria }),

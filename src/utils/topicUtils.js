@@ -1,5 +1,5 @@
 // Topic tagging and mastery tracking utilities
-import { REVIEW_THRESHOLD } from './constants';
+import { REVIEW_THRESHOLD, MAX_REVIEW_TOPICS_DISPLAY } from './constants';
 
 // Predefined math topics with keywords for auto-detection
 export const MATH_TOPICS = {
@@ -203,7 +203,7 @@ export const getRecommendedReviewTopics = (topicMastery, threshold = REVIEW_THRE
   return topicMastery
     .filter(topic => topic.masteryPercentage < threshold)
     .sort((a, b) => a.masteryPercentage - b.masteryPercentage)
-    .slice(0, 5);
+    .slice(0, MAX_REVIEW_TOPICS_DISPLAY);
 };
 
 /**

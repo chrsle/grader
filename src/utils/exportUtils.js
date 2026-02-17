@@ -1,5 +1,5 @@
 // Export utilities for CSV, PDF, and other formats
-import { getLetterGrade } from './constants';
+import { getLetterGrade, GRADE_HEX_COLORS } from './constants';
 
 /**
  * HTML-escape a string to prevent XSS in generated HTML reports.
@@ -171,11 +171,7 @@ export const generatePDFReport = (results, analytics, className = 'Math Class') 
         .stat-box { display: inline-block; margin: 10px; padding: 15px; background: #f9f9f9; border-radius: 8px; }
         .stat-value { font-size: 24px; font-weight: bold; }
         .stat-label { font-size: 12px; color: #666; }
-        .grade-A { color: #22c55e; }
-        .grade-B { color: #3b82f6; }
-        .grade-C { color: #eab308; }
-        .grade-D { color: #f97316; }
-        .grade-F { color: #ef4444; }
+        ${Object.entries(GRADE_HEX_COLORS).map(([grade, color]) => `.grade-${grade} { color: ${color}; }`).join('\n        ')}
         .page-break { page-break-before: always; }
         @media print {
           body { margin: 20px; }

@@ -2,7 +2,7 @@
 
 import React, { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { getLetterGrade, getGradeDistribution, GRADE_BOUNDARIES, GRADE_COLORS } from '../utils/constants';
+import { getLetterGrade, getGradeDistribution, GRADE_BOUNDARIES, GRADE_COLORS, DISTRIBUTION_BAR_COLORS } from '../utils/constants';
 
 const ClassAnalytics = ({ results }) => {
   const analytics = useMemo(() => {
@@ -175,13 +175,12 @@ const ClassAnalytics = ({ results }) => {
               const percentage = (count / overall.totalStudents) * 100;
               // Extract the letter from the grade label (first character)
               const letter = grade.charAt(0);
-              const barColors = { A: 'bg-green-500', B: 'bg-blue-500', C: 'bg-yellow-500', D: 'bg-orange-500', F: 'bg-red-500' };
               return (
                 <div key={grade} className="flex items-center gap-3">
                   <span className="w-24 text-sm font-medium">{grade}</span>
                   <div className="flex-1 bg-gray-200 rounded-full h-6 overflow-hidden">
                     <div
-                      className={`h-full ${barColors[letter] || 'bg-gray-500'} transition-all duration-500`}
+                      className={`h-full ${DISTRIBUTION_BAR_COLORS[letter] || 'bg-gray-500'} transition-all duration-500`}
                       style={{ width: `${percentage}%` }}
                     />
                   </div>
